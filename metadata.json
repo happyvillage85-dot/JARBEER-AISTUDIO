@@ -1,0 +1,10 @@
+{
+  "name": "J.A.R.B.E.E.R. OS",
+  "description": "Sistema operativo inteligente para microcervecería artesanal con asistente por voz y control de fermentación híbrido.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
