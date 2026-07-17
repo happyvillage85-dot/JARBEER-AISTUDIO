@@ -17,9 +17,13 @@ async function post<T>(path: string, body: unknown, timeoutMs = 2500): Promise<T
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
+    const customKey = localStorage.getItem('GEMINI_API_KEY') || '';
     const res = await fetch(`${API_BASE_URL}${path}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'x-gemini-api-key': customKey
+      },
       body: JSON.stringify(body),
       signal: ctrl.signal,
     });
@@ -35,6 +39,22 @@ async function post<T>(path: string, body: unknown, timeoutMs = 2500): Promise<T
 //   ONLINE  → Gemini API vía Netlify Function (cloud)
 //   BÚNKER → backend local real (sin internet). Si falla, fallback a mocks.
 // ─────────────────────────────────────────────────────────────────────────
+
+let onMissingApiKeyHandler: (() => void) | null = null;
+
+export const setMissingApiKeyHandler = (handler: () => void) => {
+  onMissingApiKeyHandler = handler;
+};
+
+export const checkApiKey = (): boolean => {
+  if (getMode() !== 'online') return true;
+  const key = localStorage.getItem('GEMINI_API_KEY');
+  if (!key || key.trim() === '') {
+    if (onMissingApiKeyHandler) onMissingApiKeyHandler();
+    return false;
+  }
+  return true;
+};
 
 type SystemStatusResponse = typeof systemStatus;
 type BatchResponse = typeof productionData;
@@ -136,7 +156,7 @@ function generateLocalReply(command: string, context?: unknown): string {
   }
 
   // Respuesta genérica
-  return `He recibido tu comando: "${command}".\nEn modo desarrollo no tengo acceso a Gemini, pero puedo ayudarte con:\n• Estado de lotes y fermentadores (F-01 a F-06)\n• Temperaturas, °Plato y pH\n• Recetas, maltas, lúpulos y levaduras\n• Documentos indexados\n• Estado general del sistema\n\nPrueba preguntas como "¿qué tal el F-01?" o "temperatura actual".`;
+  return `Comando no reconocido: "${command}".\n\nSocio, actualmente operamos en modo BÚNKER (procesamiento local sin conexión a internet). Mis capacidades conversacionales están restringidas a la monitorización directa de la planta.\n\nPuedo informarte sobre:\n• Estado de lotes y fermentadores (F-01 a F-06)\n• Temperaturas, °Plato y pH\n• Recetas, maltas, lúpulos y levaduras\n• Documentos indexados\n\nSi deseas utilizar mi núcleo conversacional avanzado, cambia al modo ONLINE en el selector superior de la interfaz (asegúrate de haber configurado tu GEMINI_API_KEY).`;
 }
 
 export const api = {
@@ -159,10 +179,15 @@ export const api = {
   // ── Chat / comandos ──────────────────────────────────────────────────────
   // ONLINE → Express / Netlify backend → Gemini (con historial + contexto de fábrica)
   // BÚNKER → respuesta local inteligente basada en contexto (modo offline aislado)
-  sendCommand: (command: string, history?: unknown[], context?: unknown): Promise<ChatResponse> =>
-    getMode() === 'online'
-      ? post<ChatResponse>(GEMINI_FUNCTION_URL, { command, history, context }, 25000)
-      : Promise.resolve({ reply: generateLocalReply(command, context) }),
+  sendCommand: async (command: string, history?: unknown[], context?: unknown): Promise<ChatResponse> => {
+    if (getMode() === 'online') {
+      if (!checkApiKey()) {
+        throw new Error('API_KEY_REQUIRED');
+      }
+      return post<ChatResponse>(GEMINI_FUNCTION_URL, { command, history, context }, 25000);
+    }
+    return Promise.resolve({ reply: generateLocalReply(command, context) });
+  },
 
   // ── Streaming ───────────────────────────────────────────────────────────
   sendCommandStream: async (
@@ -182,9 +207,16 @@ export const api = {
       }
       return reply;
     }
+    if (!checkApiKey()) {
+      throw new Error('API_KEY_REQUIRED');
+    }
+    const customKey = localStorage.getItem('GEMINI_API_KEY') || '';
     const res = await fetch(GEMINI_FUNCTION_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'x-gemini-api-key': customKey
+      },
       body: JSON.stringify({ command, history, context, stream: true }),
     });
 

@@ -163,7 +163,8 @@ export function Home({ onNavigate, micState, onMic, soundEnabled, onToggleSound,
         </div>
 
         {/* Quick stats row */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 shrink-0">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 shrink-0">
+          <QuickStat label="Temp. Exterior" value="31°C" sub="Estimación carga: Alta" color="#f43f5e" />
           <QuickStat label="Temperatura media" value="18.2°C" sub="Objetivo 18.0–19.0°C" color="#FFAA00" />
           <QuickStat label="SG promedio" value="1.047" sub="Fermentación activa" color="#00e1ff" />
           <QuickStat label="Fermentación media" value="79.3%" sub="6 tanques en proceso" color="#34d399" />

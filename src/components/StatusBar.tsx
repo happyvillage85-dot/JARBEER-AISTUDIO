@@ -1,4 +1,4 @@
-import { Package, BarChart3, Clock, Thermometer, Droplets, Circle } from 'lucide-react';
+import { Package, BarChart3, Clock, Thermometer, Droplets, Sun } from 'lucide-react';
 
 export function StatusBar() {
   return (
@@ -30,7 +30,7 @@ export function StatusBar() {
         </div>
         <StatusItem icon={<Clock size={10}/>} label="PRÓXIMA LIMPIEZA CIP:" value="12:45" />
         <div className="w-px h-5" style={{ background: 'rgba(255,255,255,0.07)' }} />
-        <StatusItem icon={<Thermometer size={10}/>} label="" value="24°C" />
+        <StatusItem icon={<Sun size={10}/>} label="EXT:" value="31°C" />
         <StatusItem icon={<Droplets size={10}/>} label="" value="55% HR" />
       </div>
     </div>

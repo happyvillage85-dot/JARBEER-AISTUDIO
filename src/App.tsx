@@ -1,9 +1,10 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 import { BottomNav } from './components/BottomNav';
 import { TopNav } from './components/TopNav';
 import { StatusBar } from './components/StatusBar';
+import { ApiKeyModal } from './components/ApiKeyModal';
 import { BootScreen } from './screens/BootScreen';
 import { Home } from './screens/Home';
 import { Production } from './screens/Production';
@@ -18,7 +19,7 @@ import { initialChat, voiceCommands, BATCHES, documents } from './data/mockData'
 import type { MicState } from './components/MicButton';
 import { playSound } from './lib/sound';
 import { getMode, setMode as persistMode, type SystemMode } from './lib/config';
-import { api } from './lib/api';
+import { api, setMissingApiKeyHandler } from './lib/api';
 import {
   startListening, stopListening, isVoiceRecognitionAvailable,
   speak, cancelSpeech,
@@ -40,8 +41,13 @@ export default function App() {
   const [sound, setSound]     = useState(true);
   const [voiceOn, setVoiceOn] = useState(true);
   const [mode, setModeState]  = useState<SystemMode>(() => getMode());
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const timers                = useRef<ReturnType<typeof setTimeout>[]>([]);
   const transcriptRef         = useRef('');
+
+  useEffect(() => {
+    setMissingApiKeyHandler(() => setShowApiKeyModal(true));
+  }, []);
 
   const clearTimers = () => { timers.current.forEach(clearTimeout); timers.current=[]; };
 
@@ -143,6 +149,12 @@ export default function App() {
         }
       );
     } catch (err: any) {
+      if (err.message === 'API_KEY_REQUIRED') {
+        setMsgs(p => p.slice(0, -1)); // Remove the user message that just got added
+        setTyping(false);
+        setMic('idle');
+        return;
+      }
       console.error("Error al invocar el asistente de Gemini:", err);
       const errorMsg = err.message || "Error desconocido en el servidor.";
       reply = `⚠️ *Error de conexión con el núcleo de Gemini:*\n"${errorMsg}"\n\nSocio, parece que hay un problema al contactar con mi servidor. Si estás en modo Online, asegúrate de añadir la clave de API (**GEMINI_API_KEY**) en los Ajustes. Si prefieres trabajar de forma local y offline, puedes cambiar al modo **Búnker** haciendo clic en el selector de la barra superior.`;
@@ -234,6 +246,11 @@ export default function App() {
       <AnimatePresence>
         {!booted && <BootScreen key="boot" onComplete={()=>setBooted(true)} soundEnabled={sound}/>}
       </AnimatePresence>
+      <ApiKeyModal 
+        isOpen={showApiKeyModal} 
+        onClose={() => setShowApiKeyModal(false)} 
+        onSave={() => setShowApiKeyModal(false)} 
+      />
       {booted && (
         <>
           {/* ── Desktop layout: TopNav + content + StatusBar ── */}

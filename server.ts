@@ -74,7 +74,8 @@ function buildFactoryContext(body: any) {
 
 // Handler mapping both Netlify serverless function path and standard api path
 app.post(["/api/gemini", "/.netlify/functions/gemini"], async (req, res) => {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.JARBEER_KEY;
+  const customKey = req.headers["x-gemini-api-key"] as string;
+  const apiKey = customKey || process.env.GEMINI_API_KEY || process.env.JARBEER_KEY;
   console.log(`[J.A.R.B.E.E.R. OS Backend] POST /api/gemini received. Stream: ${req.body?.stream}. Key configured: ${!!apiKey}`);
 
   if (!apiKey) {
