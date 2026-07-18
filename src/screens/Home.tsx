@@ -1,21 +1,51 @@
-import { useState } from 'react';
+import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Thermometer, Droplets, X, MessageSquare, Activity, TrendingDown, TrendingUp, Minus, FlaskConical, Clock, Cpu, ChevronRight, Beaker } from 'lucide-react';
-import type { Screen } from '../data/mockData';
+import { BATCHES, type BatchData, type Screen } from '../data/mockData';
+import { generateProductionPdfHtml } from '../lib/pdf';
 import type { MicState } from '../components/MicButton';
 
-// ─── Tank data (matches the mockup) ──────────────────────────────────────────
 const TANKS = [
-  { id: 'TQ-01', batch: '26-017', recipe: 'Golden Ale',  temp: 18.5, sg: 1.046, ph: 5.25, fermentation: 82, timeLeft: '3d 12h', status: 'activo' as const, trend: 'stable'   as const },
-  { id: 'TQ-02', batch: '26-018', recipe: 'IPA',         temp: 17.8, sg: 1.046, ph: 5.18, fermentation: 74, timeLeft: '5d 04h', status: 'activo' as const, trend: 'stable'   as const },
-  { id: 'TQ-03', batch: '26-019', recipe: 'APA',         temp: 18.7, sg: 1.048, ph: 4.35, fermentation: 92, timeLeft: '2d 14h', status: 'activo' as const, trend: 'dropping' as const },
-  { id: 'TQ-04', batch: '26-020', recipe: 'Stout',       temp: 18.1, sg: 1.047, ph: 5.22, fermentation: 67, timeLeft: '6d 00h', status: 'activo' as const, trend: 'stable'   as const },
-  { id: 'TQ-05', batch: '26-021', recipe: 'Session IPA', temp: 17.6, sg: 1.046, ph: 5.15, fermentation: 73, timeLeft: '5d 08h', status: 'activo' as const, trend: 'stable'   as const },
-  { id: 'TQ-06', batch: '26-022', recipe: 'Lager',       temp: 18.2, sg: 1.047, ph: 5.20, fermentation: 88, timeLeft: '2d 18h', status: 'activo' as const, trend: 'rising'   as const },
+  ...BATCHES.map((batch, idx) => {
+    const fermentation = batch.stageProgress;
+    const sg = +(batch.og - ((batch.og - batch.fg) * fermentation / 100)).toFixed(3);
+    const hoursLeft = Math.round(((100 - fermentation) / 10) * 24);
+    return {
+      id: `TQ-0${idx + 1}`,
+      batch: batch.batch,
+      recipe: batch.recipe,
+      temp: batch.currentTemp,
+      sg,
+      ph: batch.ph,
+      fermentation,
+      timeLeft: `${Math.max(1, Math.floor(hoursLeft / 24))}d ${hoursLeft % 24}h`,
+      status: fermentation >= 100 ? 'finalizado' as const : 'activo' as const,
+      trend: fermentation >= 85 ? 'rising' as const : fermentation >= 60 ? 'stable' as const : 'dropping' as const,
+    };
+  }),
+  ...Array.from({ length: Math.max(0, 6 - BATCHES.length) }, (_, idx) => ({
+    id: `TQ-0${BATCHES.length + idx + 1}`,
+    batch: 'Disponible',
+    recipe: 'Sin lote',
+    temp: 0,
+    sg: 0,
+    ph: 0,
+    fermentation: 0,
+    timeLeft: 'N/A',
+    status: 'inactivo' as const,
+    trend: 'stable' as const,
+  })),
 ];
 
 type Tank = typeof TANKS[0];
 type DetailTab = 'resumen' | 'graficas' | 'parametros' | 'historial';
+
+interface Measurement {
+  id: string;
+  label: string;
+  value: string;
+  unit: string;
+}
 
 interface HomeProps {
   micState: MicState;
@@ -28,9 +58,69 @@ interface HomeProps {
 }
 
 export function Home({ onNavigate, micState, onMic, soundEnabled, onToggleSound, mode, onToggleMode }: HomeProps) {
-  // Default to TQ-03 (third tank, F3) selected on start to match the mockup
-  const [selected, setSelected] = useState<Tank | null>(() => TANKS[2]);
+  const [selectedIndex, setSelectedIndex] = useState<number>(() => 2);
+  const [editedBatch, setEditedBatch] = useState<BatchData>(() => ({ ...BATCHES[2] }));
+  const [measurements, setMeasurements] = useState<Measurement[]>(() => initialMeasurements(TANKS[2]));
   const [tab, setTab] = useState<DetailTab>('resumen');
+  const [pdfState, setPdfState] = useState<'idle' | 'generating' | 'done'>('idle');
+  const [saving, setSaving] = useState(false);
+
+  const selectedTank = selectedIndex != null ? TANKS[selectedIndex] : null;
+  const selected = selectedTank;
+
+  useEffect(() => {
+    if (selectedIndex == null) return;
+    setEditedBatch({ ...BATCHES[selectedIndex] });
+    setMeasurements(initialMeasurements(TANKS[selectedIndex]));
+    setTab('resumen');
+  }, [selectedIndex]);
+
+  const numericKeys: (keyof BatchData)[] = ['volume', 'currentTemp', 'targetTemp', 'plato', 'ph', 'og', 'fg', 'abv', 'ibu', 'ebc', 'stageProgress'];
+
+  const handleBatchFieldChange = (key: keyof BatchData, value: string) => {
+    setEditedBatch(prev => ({
+      ...prev,
+      [key]: numericKeys.includes(key) ? parseFloat(value) || 0 : value,
+    }) as BatchData);
+  };
+
+  const handleMeasurementsChange = (index: number, field: keyof Measurement, value: string) => {
+    setMeasurements(prev => prev.map((m, idx) => idx === index ? { ...m, [field]: value } : m));
+  };
+
+  const addMeasurement = () => {
+    setMeasurements(prev => [...prev, { id: `m-${Date.now()}`, label: 'Nueva medida', value: '', unit: '' }]);
+  };
+
+  const removeMeasurement = (id: string) => {
+    setMeasurements(prev => prev.filter(m => m.id !== id));
+  };
+
+  const handleSave = () => {
+    setSaving(true);
+    setTimeout(() => setSaving(false), 1200);
+  };
+
+  const handleGeneratePdf = () => {
+    if (pdfState !== 'idle') return;
+    setPdfState('generating');
+    setTimeout(() => {
+      const html = generateProductionPdfHtml(editedBatch, editedBatch.maltas, editedBatch.lupulosPlantilla);
+      const win = window.open('', '_blank');
+      if (win) {
+        win.document.write(html);
+        win.document.close();
+        win.focus();
+        setTimeout(() => win.print(), 320);
+      }
+      setPdfState('done');
+      setTimeout(() => setPdfState('idle'), 2600);
+    }, 400);
+  };
+
+  const handleSelectTank = (idx: number) => {
+    setSelectedIndex(idx);
+  };
 
   return (
     <div className="flex flex-col md:flex-row h-full overflow-hidden">
@@ -75,7 +165,7 @@ export function Home({ onNavigate, micState, onMic, soundEnabled, onToggleSound,
             return (
               <motion.button
                 key={tank.id}
-                onClick={() => { setSelected(tank); setTab('resumen'); }}
+                onClick={() => handleSelectTank(idx)}
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.98 }}
                 className="absolute transition-all duration-300 rounded-xl p-1.5 md:p-3 text-left flex flex-col justify-between"
@@ -199,27 +289,40 @@ export function Home({ onNavigate, micState, onMic, soundEnabled, onToggleSound,
         </div>
       </div>
 
-      {/* ── Right sidebar container: Detail Panel (Desktop only) ── */}
-      <div className="hidden md:flex md:w-[320px] lg:w-[360px] xl:w-[400px] shrink-0 h-full border-l border-white/5 bg-slate-950/20 backdrop-blur-md overflow-y-auto">
-        {selected ? (
-          <DetailPanel 
-            tank={selected} 
-            tab={tab} 
-            setTab={setTab} 
-            onClose={() => setSelected(null)} 
-            onNavigate={onNavigate} 
-          />
-        ) : (
-          <div className="flex flex-col items-center justify-center p-8 text-center h-full space-y-3">
-            <div className="h-12 w-12 rounded-full border border-dashed border-white/10 flex items-center justify-center text-gray-500">
-              <FlaskConical size={20} />
-            </div>
-            <p className="font-mono text-xs text-gray-500 uppercase tracking-widest">
-              Seleccione un fermentador
-            </p>
-          </div>
+      <AnimatePresence>
+        {selected && (
+          <motion.div
+            className="hidden md:flex fixed inset-0 z-50 items-center justify-center p-6"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          >
+            <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-xl" onClick={() => setSelectedIndex(null)} />
+            <motion.div
+              className="relative z-10 w-full max-w-[420px] max-h-[90vh] overflow-hidden rounded-[32px] border border-white/10 bg-slate-950/95 shadow-[0_30px_120px_rgba(0,0,0,0.45)]"
+              initial={{ opacity: 0, scale: 0.96, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 16 }}
+              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <DetailPanel
+                tank={selected}
+                batch={editedBatch}
+                editedBatch={editedBatch}
+                onChangeBatch={handleBatchFieldChange}
+                tab={tab}
+                setTab={setTab}
+                onClose={() => setSelectedIndex(null)}
+                onNavigate={onNavigate}
+                measurements={measurements}
+                setMeasurements={setMeasurements}
+                onGeneratePdf={handleGeneratePdf}
+                onSave={handleSave}
+                pdfState={pdfState}
+                saving={saving}
+              />
+            </motion.div>
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
 
       {/* ── Mobile-only Detail Drawer/Modal ── */}
       <AnimatePresence>
@@ -227,7 +330,7 @@ export function Home({ onNavigate, micState, onMic, soundEnabled, onToggleSound,
           <motion.div
             className="md:hidden fixed inset-0 z-50 flex items-center justify-center p-4"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            onClick={() => setSelected(null)}
+            onClick={() => setSelectedIndex(null)}
           >
             <div className="absolute inset-0" style={{ background: 'rgba(2,4,8,0.7)', backdropFilter: 'blur(8px)' }} />
             <motion.div
@@ -245,7 +348,22 @@ export function Home({ onNavigate, micState, onMic, soundEnabled, onToggleSound,
                 boxShadow: '0 0 40px rgba(255,170,0,0.08)',
               }}
             >
-              <DetailPanel tank={selected} tab={tab} setTab={setTab} onClose={() => setSelected(null)} onNavigate={onNavigate} />
+              <DetailPanel
+                tank={selected}
+                batch={editedBatch}
+                editedBatch={editedBatch}
+                onChangeBatch={handleBatchFieldChange}
+                tab={tab}
+                setTab={setTab}
+                onClose={() => setSelectedIndex(null)}
+                onNavigate={onNavigate}
+                measurements={measurements}
+                setMeasurements={setMeasurements}
+                onGeneratePdf={handleGeneratePdf}
+                onSave={handleSave}
+                pdfState={pdfState}
+                saving={saving}
+              />
             </motion.div>
           </motion.div>
         )}

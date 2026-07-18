@@ -1,4 +1,4 @@
-import { API_BASE_URL, GEMINI_FUNCTION_URL, IS_PRODUCTION, getMode } from './config';
+﻿import { API_BASE_URL, GEMINI_FUNCTION_URL, IS_PRODUCTION, getMode } from './config';
 import { systemStatus, productionData, BATCHES, documents } from '../data/mockData';
 import { logger } from './logger';
 
@@ -60,11 +60,11 @@ async function post<T>(path: string, body: unknown, timeoutMs = 2500): Promise<T
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// Arquitectura híbrida:
-//   ONLINE  → Gemini API vía Netlify Function (cloud)
-//   BÚNKER → backend local real (sin internet). Si falla, fallback a mocks.
-// ─────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Arquitectura hÃ­brida:
+//   ONLINE  â†’ Gemini API vÃ­a Netlify Function (cloud)
+//   BÃšNKER â†’ backend local real (sin internet). Si falla, fallback a mocks.
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 let onMissingApiKeyHandler: (() => void) | null = null;
 
@@ -88,7 +88,9 @@ type DocumentsResponse = typeof documents;
 type ChatResponse = { reply: string };
 
 async function withBunkerFallback<T>(real: () => Promise<T>, mock: () => T): Promise<T> {
-  if (getMode() !== 'bunker') return mock();
+  if (getMode() !== 'bunker') {
+    return await real();
+  }
   try {
     return await real();
   } catch {
@@ -96,21 +98,26 @@ async function withBunkerFallback<T>(real: () => Promise<T>, mock: () => T): Pro
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Respuesta local inteligente para dev mode (sin Gemini)
-// Analiza el comando y responde con datos reales de la fábrica
-// ─────────────────────────────────────────────────────────────────────────
+// Analiza el comando y responde con datos reales de la fÃ¡brica
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function generateLocalReply(command: string, context?: unknown): string {
   const lower = command.toLowerCase();
   const ctx = context as { batches?: typeof BATCHES; fermentadores?: unknown[]; documents?: typeof documents; mode?: string } | undefined;
 
-  // Buscar fermentador por número
+  // Buscar fermentador por nÃºmero
   const fMatch = lower.match(/f-?0?([1-6])/);
   if (fMatch) {
     const fNum = parseInt(fMatch[1]);
     const batch = ctx?.batches?.find(b => parseInt(b.fermentadorNum) === fNum) ?? BATCHES.find(b => parseInt(b.fermentadorNum) === fNum);
     if (batch) {
-      return `Fermentador F-0${fNum}: ${batch.recipe} — Lote ${batch.batch}.\nEtapa: ${batch.stage} (${batch.stageProgress}% completado).\nTemperatura: ${batch.currentTemp}°C (objetivo ${batch.targetTemp}°C).\n°Plato: ${batch.plato} · pH: ${batch.ph}.\nVolumen: ${batch.volume} L.`;
+      return `Fermentador F-0${fNum}: ${batch.recipe} — Lote ${batch.batch}.
+Etapa: ${batch.stage} (${batch.stageProgress}% completado).
+Temperatura: ${batch.currentTemp}Â°C (objetivo ${batch.targetTemp}Â°C).
+Â°Plato: ${batch.plato} Â· pH: ${batch.ph}.
+Volumen: ${batch.volume} L.`;
     }
     return `Fermentador F-0${fNum}: sin lote activo asignado.`;
   }
@@ -118,71 +125,119 @@ function generateLocalReply(command: string, context?: unknown): string {
   // Buscar por nombre de receta
   for (const b of BATCHES) {
     if (lower.includes(b.recipe.toLowerCase())) {
-      return `${b.recipe} — Lote ${b.batch}.\nEtapa actual: ${b.stage} (${b.stageProgress}%).\nFermentador: F-${b.fermentadorNum}.\nTemperatura: ${b.currentTemp}°C → ${b.targetTemp}°C.\n°Plato: ${b.plato} · pH: ${b.ph} · ABV estimado: ${b.abv}%.\nIBU: ${b.ibu} · EBC: ${b.ebc}.\nLevadura: ${b.levadura.name} (${b.levadura.lab}).`;
+      return `${b.recipe} — Lote ${b.batch}.
+Etapa actual: ${b.stage} (${b.stageProgress}%).
+Fermentador: F-${b.fermentadorNum}.
+Temperatura: ${b.currentTemp}Â°C â†’ ${b.targetTemp}Â°C.
+Â°Plato: ${b.plato} Â· pH: ${b.ph} Â· ABV estimado: ${b.abv}%.
+IBU: ${b.ibu} Â· EBC: ${b.ebc}.
+Levadura: ${b.levadura.name} (${b.levadura.lab}).`;
     }
   }
 
   // Temperatura
   if (lower.includes('temperatura') || lower.includes('temp')) {
     const b = BATCHES[0];
-    return `Temperatura actual del sistema: ${systemStatus.temperature.toFixed(1)}°C.\nObjetivo: ${systemStatus.targetTemp.toFixed(1)}°C.\nLote activo (${b.recipe}, F-${b.fermentadorNum}): ${b.currentTemp}°C → ${b.targetTemp}°C.\nEstado: dentro de rango operativo.`;
+    return `Temperatura actual del sistema: ${systemStatus.temperature.toFixed(1)}Â°C.
+Objetivo: ${systemStatus.targetTemp.toFixed(1)}Â°C.
+Lote activo (${b.recipe}, F-${b.fermentadorNum}): ${b.currentTemp}Â°C â†’ ${b.targetTemp}Â°C.
+Estado: dentro de rango operativo.`;
   }
 
   // Plato / densidad
   if (lower.includes('plato') || lower.includes('densidad')) {
     const b = BATCHES[0];
-    return `°Plato del lote activo (${b.recipe}): ${b.plato}°P.\npH: ${b.ph}.\nOG: ${b.og} · FG estimada: ${b.fg}.\nABV estimado: ${b.abv}%.`;
+    return `Â°Plato del lote activo (${b.recipe}): ${b.plato}Â°P.
+pH: ${b.ph}.
+OG: ${b.og} Â· FG estimada: ${b.fg}.
+ABV estimado: ${b.abv}%.`;
   }
 
   // Documentos
   if (lower.includes('documento') || lower.includes('biblioteca') || lower.includes('libro')) {
-    return `Biblioteca documental: ${documents.length} documentos indexados.\n${documents.slice(0, 4).map(d => `• ${d.title} (${d.reference})`).join('\n')}\nAccede desde la pestaña Documentos para buscar y filtrar.`;
+    return `Biblioteca documental: ${documents.length} documentos indexados.
+${documents.slice(0, 4).map(d => `• ${d.title} (${d.reference})`).join("\n")}
+Accede desde la pestaña Documentos para buscar y filtrar.`;
   }
 
-  // Lúpulos
-  if (lower.includes('lúpulo') || lower.includes('lupulo') || lower.includes('cascade') || lower.includes('simcoe') || lower.includes('magnum')) {
+  // LÃºpulos
+  if (lower.includes('lÃºpulo') || lower.includes('lupulo') || lower.includes('cascade') || lower.includes('simcoe') || lower.includes('magnum')) {
     const hopName = ['cascade', 'simcoe', 'magnum', 'hallertauer', 'northern brewer', 'ekg'].find(h => lower.includes(h));
     if (hopName) {
       for (const b of BATCHES) {
         const hop = b.lupulos.find(l => l.name.toLowerCase().includes(hopName));
         if (hop) {
-          return `Lúpulo ${hop.name} encontrado en ${b.recipe} (Lote ${b.batch}):\nAdición: ${hop.addition} · Cantidad: ${hop.amount}.\nAlfa-ácidos: ${hop.alpha || 'no especificado'}.`;
+          return `LÃºpulo ${hop.name} encontrado en ${b.recipe} (Lote ${b.batch}):
+AdiciÃ³n: ${hop.addition} Â· Cantidad: ${hop.amount}.
+Alfa-Ã¡cidos: ${hop.alpha || 'no especificado'}.`;
         }
       }
-      return `No se encontró el lúpulo "${hopName}" en los lotes activos.`;
+      return `No se encontrÃ³ el lÃºpulo "${hopName}" en los lotes activos.`;
     }
-    return `Lúpulos en uso:\n${BATCHES.flatMap(b => b.lupulos.map(l => `• ${l.name} — ${l.amount} (${l.addition}) en ${b.recipe}`)).join('\n')}`;
+    return `Lúpulos en uso:
+${BATCHES.flatMap(b => b.lupulos.map(l => `• ${l.name} — ${l.amount} (${l.addition}) en ${b.recipe}`)).join("\n")}
+`;
   }
 
   // Malta
   if (lower.includes('malta') || lower.includes('malt')) {
     const b = BATCHES[0];
-    return `Maltas del lote activo (${b.recipe}):\n${b.maltas.map(m => `• ${m.name}: ${m.amount} (EBC ${m.ebc}) — ${m.supplier}`).join('\n')}`;
+    return `Maltas del lote activo (${b.recipe}):
+${b.maltas.map(m => `• ${m.name}: ${m.amount} (EBC ${m.ebc}) — ${m.supplier}`).join('\n')}`;
   }
 
   // Levadura
   if (lower.includes('levadura') || lower.includes('fermentación') || lower.includes('fermentacion')) {
     const b = BATCHES[0];
-    return `Levadura del lote activo (${b.recipe}):\n• Cepa: ${b.levadura.name}\n• Laboratorio: ${b.levadura.lab}\n• Formato: ${b.levadura.format}\n• Inoculación: ${b.levadura.pitch}\nFermentador: F-${b.fermentadorNum} a ${b.currentTemp}°C.`;
+    return `Levadura del lote activo (${b.recipe}):
+• Cepa: ${b.levadura.name}
+• Laboratorio: ${b.levadura.lab}
+• Formato: ${b.levadura.format}
+• Inoculación: ${b.levadura.pitch}
+Fermentador: F-${b.fermentadorNum} a ${b.currentTemp}Â°C.`;
   }
 
   // Estado general
   if (lower.includes('estado') || lower.includes('sistema') || lower.includes('general')) {
-    return `Estado del sistema J.A.R.B.E.E.R.:\n• Estado: ${systemStatus.state}\n• Uptime: ${systemStatus.uptime}\n• Lote activo: ${systemStatus.activeBatch}\n• Alertas: ${systemStatus.alerts}\n• Documentos indexados: ${systemStatus.docsIndexed}\n• IA: ${systemStatus.aiModel} (${systemStatus.aiStatus})\n• Red: ${systemStatus.network}`;
+    return `Estado del sistema J.A.R.B.E.E.R.:
+• Estado: ${systemStatus.state}
+• Uptime: ${systemStatus.uptime}
+• Lote activo: ${systemStatus.activeBatch}
+• Alertas: ${systemStatus.alerts}
+• Documentos indexados: ${systemStatus.docsIndexed}
+• IA: ${systemStatus.aiModel} (${systemStatus.aiStatus})
+• Red: ${systemStatus.network}`;
   }
 
   // Nuevo lote
   if (lower.includes('nuevo lote') || lower.includes('crear') || lower.includes('empieza')) {
-    return `Para crear un nuevo lote, necesito:\n1. Receta base (Golden Ale, Red Ale, Blonde Ale o nueva)\n2. Volumen objetivo (L)\n3. Fecha de inicio\n\nUna vez confirmes, prepararé la ficha de producción con escalones de maceración, lúpulos y curva de fermentación.`;
+    return `Para crear un nuevo lote, necesito:
+1. Receta base (Golden Ale, Red Ale, Blonde Ale o nueva)
+2. Volumen objetivo (L)
+3. Fecha de inicio
+
+Una vez confirmes, prepararÃ© la ficha de producciÃ³n con escalones de maceraciÃ³n, lÃºpulos y curva de fermentaciÃ³n.`;
   }
 
   // Saludo
   if (lower.includes('hola') || lower.includes('buenas') || lower.includes('hey')) {
-    return `Hola, Juanfran. Sistema operativo. Tengo ${BATCHES.length} lotes en seguimiento.\nLote activo: ${BATCHES[0].recipe} (${BATCHES[0].batch}) en F-${BATCHES[0].fermentadorNum}, fermentación al ${BATCHES[0].stageProgress}%.\n¿En qué puedo ayudarte?`;
+    return `Hola, Juanfran. Sistema operativo. Tengo ${BATCHES.length} lotes en seguimiento.
+Lote activo: ${BATCHES[0].recipe} (${BATCHES[0].batch}) en F-${BATCHES[0].fermentadorNum}, fermentaciÃ³n al ${BATCHES[0].stageProgress}%.
+Â¿En quÃ© puedo ayudarte?`;
   }
 
   // Respuesta genérica
-  return `Comando no reconocido: "${command}".\n\nSocio, actualmente operamos en modo BÚNKER (procesamiento local sin conexión a internet). Mis capacidades conversacionales están restringidas a la monitorización directa de la planta.\n\nPuedo informarte sobre:\n• Estado de lotes y fermentadores (F-01 a F-06)\n• Temperaturas, °Plato y pH\n• Recetas, maltas, lúpulos y levaduras\n• Documentos indexados\n\nSi deseas utilizar mi núcleo conversacional avanzado, cambia al modo ONLINE en el selector superior de la interfaz (asegúrate de haber configurado tu GEMINI_API_KEY).`;
+  return `Comando no reconocido: "${command}".
+
+Socio, actualmente operamos en modo BÚNKER (procesamiento local sin conexión a internet). Mis capacidades conversacionales están restringidas a la monitorización directa de la planta.
+
+Puedo informarte sobre:
+• Estado de lotes y fermentadores (F-01 a F-06)
+• Temperaturas, °Plato y pH
+• Recetas, maltas, lúpulos y levaduras
+• Documentos indexados
+
+Si deseas utilizar mi núcleo conversacional avanzado, cambia al modo ONLINE en el selector superior de la interfaz (asegúrate de haber configurado tu GEMINI_API_KEY).`;
 }
 
 export const api = {
@@ -202,9 +257,9 @@ export const api = {
   getDocuments: (): Promise<DocumentsResponse> =>
     withBunkerFallback(() => get<DocumentsResponse>('/api/v1/documents'), () => documents),
 
-  // ── Chat / comandos ──────────────────────────────────────────────────────
-  // ONLINE → Express / Netlify backend → Gemini (con historial + contexto de fábrica)
-  // BÚNKER → respuesta local inteligente basada en contexto (modo offline aislado)
+  // â”€â”€ Chat / comandos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ONLINE â†’ Express / Netlify backend â†’ Gemini (con historial + contexto de fÃ¡brica)
+  // BÃšNKER â†’ respuesta local inteligente basada en contexto (modo offline aislado)
   sendCommand: async (command: string, history?: unknown[], context?: unknown): Promise<ChatResponse> => {
     if (getMode() === 'online') {
       if (!checkApiKey()) {
@@ -215,7 +270,7 @@ export const api = {
     return Promise.resolve({ reply: generateLocalReply(command, context) });
   },
 
-  // ── Streaming ───────────────────────────────────────────────────────────
+  // â”€â”€ Streaming â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   sendCommandStream: async (
     command: string,
     history: unknown[],
@@ -302,3 +357,8 @@ export const api = {
 };
 
 export { get, post };
+
+
+
+
+

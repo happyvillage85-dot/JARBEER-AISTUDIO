@@ -271,13 +271,13 @@ export default function App() {
       {/* Background image — full visibility */}
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <img 
-          src="/src/assets/images/fondo_pc_1784321905664.jpg" 
-          alt="" 
-          className="absolute inset-0 h-full w-full object-cover" 
-          style={{ opacity: 1 }} 
+          src="/fondo_pc.png" 
+          alt="Fondo de pantalla" 
+          className="absolute inset-0 h-full w-full object-cover"
+          style={{ opacity: 1 }}
           referrerPolicy="no-referrer"
         />
-        <div className="absolute inset-0" style={{ background: 'rgba(2,4,8,0.35)' }} />
+        <div className="absolute inset-0 bg-black/60" />
       </div>
       <AnimatePresence>
         {!booted && <BootScreen key="boot" onComplete={()=>setBooted(true)} soundEnabled={sound}/>}
