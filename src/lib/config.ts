@@ -19,10 +19,6 @@ const MODE_KEY = 'jarbeer_mode';
  * BÚNKER  → IA local (Gemma/Llama/Mistral/Qwen, sin internet, datos en la fábrica)
  */
 export function getMode(): SystemMode {
-  try {
-    const stored = localStorage.getItem(MODE_KEY);
-    if (stored === 'bunker' || stored === 'online') return stored;
-  } catch { /* localStorage no disponible */ }
   return 'online';
 }
 

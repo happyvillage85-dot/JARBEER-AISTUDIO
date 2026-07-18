@@ -1,5 +1,8 @@
 import { API_BASE_URL, GEMINI_FUNCTION_URL, IS_PRODUCTION, getMode } from './config';
 import { systemStatus, productionData, BATCHES, documents } from '../data/mockData';
+import { logger } from './logger';
+
+const sanitizeHeaderValue = (val: string) => val.replace(/[^\x00-\x7F]/g, "").trim();
 
 async function get<T>(path: string, timeoutMs = 2500): Promise<T> {
   const ctrl = new AbortController();
@@ -17,7 +20,7 @@ async function post<T>(path: string, body: unknown, timeoutMs = 2500): Promise<T
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    const customKey = localStorage.getItem('GEMINI_API_KEY') || '';
+    const customKey = sanitizeHeaderValue(localStorage.getItem('GEMINI_API_KEY') || '');
     const res = await fetch(`${API_BASE_URL}${path}`, {
       method: 'POST',
       headers: { 
@@ -27,7 +30,30 @@ async function post<T>(path: string, body: unknown, timeoutMs = 2500): Promise<T
       body: JSON.stringify(body),
       signal: ctrl.signal,
     });
-    if (!res.ok) throw new Error(`API ${res.status}: ${path}`);
+    if (!res.ok) {
+      let errMsg = '';
+      try {
+        const errJson = await res.json();
+        errMsg = errJson.error || errJson.message || JSON.stringify(errJson);
+      } catch {
+        errMsg = await res.text();
+      }
+      
+      logger.error(`API Error POST ${path}`, errMsg);
+
+      // If the error is about invalid API key, show the modal again
+      if (
+        res.status === 401 ||
+        errMsg.includes('401 Unauthorized') ||
+        errMsg.includes('API key') ||
+        errMsg.includes('API_KEY_INVALID')
+      ) {
+        localStorage.removeItem('GEMINI_API_KEY');
+        if (onMissingApiKeyHandler) onMissingApiKeyHandler();
+        throw new Error('API_KEY_REQUIRED');
+      }
+      throw new Error(`API ${res.status}: ${path} - ${errMsg}`);
+    }
     return (await res.json()) as T;
   } finally {
     clearTimeout(timer);
@@ -196,7 +222,9 @@ export const api = {
     context: unknown,
     onChunk: (text: string) => void
   ): Promise<string> => {
-    if (getMode() !== 'online') {
+    const mode = getMode();
+    console.log("DEBUG: mode in sendCommandStream:", mode);
+    if (mode !== 'online') {
       const reply = generateLocalReply(command, context);
       // Simular streaming palabra a palabra
       const words = reply.split(' ');
@@ -210,7 +238,7 @@ export const api = {
     if (!checkApiKey()) {
       throw new Error('API_KEY_REQUIRED');
     }
-    const customKey = localStorage.getItem('GEMINI_API_KEY') || '';
+    const customKey = sanitizeHeaderValue(localStorage.getItem('GEMINI_API_KEY') || '');
     const res = await fetch(GEMINI_FUNCTION_URL, {
       method: 'POST',
       headers: { 
@@ -224,10 +252,25 @@ export const api = {
       let errMsg = '';
       try {
         const errJson = await res.json();
-        errMsg = errJson.error || errJson.message || '';
+        errMsg = errJson.error || errJson.message || JSON.stringify(errJson);
       } catch {
         errMsg = await res.text();
       }
+      
+      logger.error(`Gemini Stream Error`, errMsg);
+
+      // If the error is about invalid API key, show the modal again
+      if (
+        res.status === 401 ||
+        errMsg.includes('401 Unauthorized') ||
+        errMsg.includes('API key') ||
+        errMsg.includes('API_KEY_INVALID')
+      ) {
+        localStorage.removeItem('GEMINI_API_KEY');
+        if (onMissingApiKeyHandler) onMissingApiKeyHandler();
+        throw new Error('API_KEY_REQUIRED');
+      }
+      
       throw new Error(errMsg || `Fallo del servidor (status ${res.status})`);
     }
 

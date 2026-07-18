@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { AlertTriangle, Bell, CheckCircle2, Clock, Key, Save } from 'lucide-react';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { GlassCard } from '../components/GlassCard';
+import { haptics } from '../lib/haptics';
 
 const ALERTAS = [
   { id: 1, level: 'warning', title: 'F-04 · Temperatura elevada', desc: 'Stout a 22°C — rango objetivo 18-20°C', time: 'Hace 12 min' },
@@ -30,6 +31,7 @@ export function Alertas() {
   const handleSave = () => {
     localStorage.setItem('GEMINI_API_KEY', apiKey);
     setSaved(true);
+    haptics.success();
     setTimeout(() => setSaved(false), 2000);
   };
 

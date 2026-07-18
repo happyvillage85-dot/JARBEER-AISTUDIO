@@ -1,11 +1,12 @@
 import { useRef, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, ChevronRight } from 'lucide-react';
+import { Send, ChevronRight, Mic } from 'lucide-react';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { MicButton, type MicState } from '../components/MicButton';
 import type { ChatMessage, Screen } from '../data/mockData';
 import { voiceCommands } from '../data/mockData';
 import { MODE_LABELS, type SystemMode } from '../lib/config';
+import { listAvailableSpanishVoices } from '../lib/voice';
 
 const SUGGESTIONS = ['Abre la Golden','Buscar Cascade','Temperatura actual','Abrir receta IPA','Mostrar documentos','Estado del F-04'];
 
@@ -13,23 +14,37 @@ interface AssistantProps {
   messages: ChatMessage[]; micState: MicState;
   onMic: () => void; onSend: (t: string) => void;
   typing: boolean; onNavigate: (s: Screen) => void;
-  mode: SystemMode;
+  mode: SystemMode; selectedVoice: string; setSelectedVoice: (v: string) => void;
 }
 
-export function Assistant({ messages, micState, onMic, onSend, typing, onNavigate, mode }: AssistantProps) {
+export function Assistant({ messages, micState, onMic, onSend, typing, onNavigate, mode, selectedVoice, setSelectedVoice }: AssistantProps) {
   const [draft, setDraft] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
   const isActive = micState !== 'idle';
   const labels = MODE_LABELS[mode];
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior:'smooth' }); }, [messages, typing]);
+  useEffect(() => { setVoices(listAvailableSpanishVoices()); }, []);
 
   const send = () => { const t=draft.trim(); if(!t)return; setDraft(''); onSend(t); };
 
   return (
     <div className="flex min-h-full flex-col pb-32">
       <ScreenHeader title="Asistente IA" subtitle={`J.A.R.B.E.E.R. · ${labels.full}`}
-        right={<div className="flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full" style={{ background: labels.dot, boxShadow:`0 0 6px ${labels.dot}`, animation:'live-pulse 2s ease-in-out infinite' }}/><span className="font-mono text-[10px]" style={{color: labels.color}}>{labels.short === 'ONLINE' ? 'EN LÍNEA' : 'LOCAL'}</span></div>}
+        right={
+          <div className="flex items-center gap-3">
+             <select 
+               value={selectedVoice} 
+               onChange={(e) => setSelectedVoice(e.target.value)}
+               className="bg-transparent text-[10px] font-mono text-gray-400 focus:outline-none"
+             >
+               <option value="">Voz predeterminada</option>
+               {voices.map(v => <option key={v.name} value={v.name}>{v.name}</option>)}
+             </select>
+             <div className="flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full" style={{ background: labels.dot, boxShadow:`0 0 6px ${labels.dot}`, animation:'live-pulse 2s ease-in-out infinite' }}/><span className="font-mono text-[10px]" style={{color: labels.color}}>{labels.short === 'ONLINE' ? 'EN LÍNEA' : 'LOCAL'}</span></div>
+          </div>
+        }
       />
 
       <div className="flex-1 overflow-y-auto px-4">

@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Thermometer, Droplets, FlaskConical, Clock, Cpu, X, Activity, Beaker } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { BATCHES } from '../data/mockData';
 
@@ -37,6 +38,8 @@ export function Fermentadores() {
           <FermentadorVista key={f.id} f={f} delay={0.06 + i * 0.04} onClick={() => setSelected(f)} />
         ))}
       </div>
+
+      <RealtimeDashboard />
 
       <AnimatePresence>
         {selected && <FermentadorModal f={selected} onClose={() => setSelected(null)} />}
@@ -334,6 +337,97 @@ function DetailRow({ label, value }: { label: string; value: string }) {
     <div className="flex items-center justify-between">
       <span className="font-mono text-[10px] uppercase tracking-wider" style={{ color: 'rgba(74,96,112,0.6)' }}>{label}</span>
       <span className="font-display text-xs font-medium text-white">{value}</span>
+    </div>
+  );
+}
+
+function RealtimeDashboard() {
+  const [data, setData] = useState<any[]>([]);
+  const ACTIVE_FERMENTERS = FERMENTADORES.filter(f => f.status === 'activo');
+  const COLORS = ['#00e1ff', '#34d399', '#FFAA00', '#f43f5e'];
+
+  useEffect(() => {
+    // Initial history data
+    const initial = [];
+    const now = new Date();
+    for (let i = 20; i >= 0; i--) {
+      const dp: any = { time: new Date(now.getTime() - i * 2000).toLocaleTimeString([], { minute: '2-digit', second: '2-digit' }) };
+      ACTIVE_FERMENTERS.forEach(f => {
+        dp[`${f.id}_temp`] = +(f.temp + (Math.random() * 0.4 - 0.2)).toFixed(2);
+        dp[`${f.id}_ph`] = +(f.ph + (Math.random() * 0.04 - 0.02)).toFixed(2);
+      });
+      initial.push(dp);
+    }
+    setData(initial);
+
+    const interval = setInterval(() => {
+      setData(prev => {
+        const next = [...prev.slice(1)];
+        const dp: any = { time: new Date().toLocaleTimeString([], { minute: '2-digit', second: '2-digit' }) };
+        ACTIVE_FERMENTERS.forEach(f => {
+          dp[`${f.id}_temp`] = +(f.temp + (Math.random() * 0.4 - 0.2)).toFixed(2);
+          dp[`${f.id}_ph`] = +(f.ph + (Math.random() * 0.04 - 0.02)).toFixed(2);
+        });
+        next.push(dp);
+        return next;
+      });
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="mt-6 px-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Temp chart */}
+        <div className="rounded-2xl p-4" style={{ background: 'rgba(2,5,10,0.4)', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <h3 className="text-sm font-display font-bold text-gray-300 mb-4 flex items-center gap-2">
+            <Thermometer size={16} className="text-orange-400" />
+            Temperatura en Tiempo Real (°C)
+          </h3>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                <XAxis dataKey="time" stroke="rgba(255,255,255,0.3)" fontSize={10} tickMargin={8} />
+                <YAxis stroke="rgba(255,255,255,0.3)" fontSize={10} domain={['auto', 'auto']} />
+                <RechartsTooltip 
+                  contentStyle={{ background: 'rgba(2,5,10,0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '12px' }}
+                  itemStyle={{ color: '#fff' }}
+                />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                {ACTIVE_FERMENTERS.map((f, i) => (
+                  <Line key={`temp-${f.id}`} type="monotone" dataKey={`${f.id}_temp`} name={`${f.id}`} stroke={COLORS[i % COLORS.length]} strokeWidth={2} dot={false} isAnimationActive={false} />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* pH chart */}
+        <div className="rounded-2xl p-4" style={{ background: 'rgba(2,5,10,0.4)', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <h3 className="text-sm font-display font-bold text-gray-300 mb-4 flex items-center gap-2">
+            <FlaskConical size={16} className="text-blue-400" />
+            pH en Tiempo Real
+          </h3>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                <XAxis dataKey="time" stroke="rgba(255,255,255,0.3)" fontSize={10} tickMargin={8} />
+                <YAxis stroke="rgba(255,255,255,0.3)" fontSize={10} domain={['auto', 'auto']} />
+                <RechartsTooltip 
+                  contentStyle={{ background: 'rgba(2,5,10,0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '12px' }}
+                  itemStyle={{ color: '#fff' }}
+                />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                {ACTIVE_FERMENTERS.map((f, i) => (
+                  <Line key={`ph-${f.id}`} type="monotone" dataKey={`${f.id}_ph`} name={`${f.id}`} stroke={COLORS[i % COLORS.length]} strokeWidth={2} dot={false} isAnimationActive={false} />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

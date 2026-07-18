@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Key, Save, X, CheckCircle2 } from 'lucide-react';
 import { GlassCard } from './GlassCard';
+import { haptics } from '../lib/haptics';
 
 interface ApiKeyModalProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ export function ApiKeyModal({ isOpen, onClose, onSave }: ApiKeyModalProps) {
 
   useEffect(() => {
     if (isOpen) {
+      haptics.warning();
       const stored = localStorage.getItem('GEMINI_API_KEY');
       if (stored) setApiKey(stored);
       setSaved(false);
@@ -25,6 +27,7 @@ export function ApiKeyModal({ isOpen, onClose, onSave }: ApiKeyModalProps) {
     if (!apiKey.trim()) return;
     localStorage.setItem('GEMINI_API_KEY', apiKey.trim());
     setSaved(true);
+    haptics.success();
     onSave(apiKey.trim());
     setTimeout(() => {
       setSaved(false);

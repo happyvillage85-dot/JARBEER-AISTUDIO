@@ -7,6 +7,29 @@ const LABELS: Record<MicState, string> = {
   idle: 'Pulsar para hablar', listening: 'Escuchando...', processing: 'Procesando...', responding: 'Respondiendo...',
 };
 
+const Waveform = ({ color, size }: { color: string; size: number }) => {
+  return (
+    <div className="flex items-center gap-[3px]" style={{ height: size }}>
+      {[0, 1, 2, 3, 4].map((i) => (
+        <motion.div
+          key={i}
+          className="rounded-full"
+          style={{ width: size > 24 ? 4 : 3, backgroundColor: color }}
+          animate={{
+            height: ["20%", "80%", "40%", "100%", "20%"],
+          }}
+          transition={{
+            duration: 1.2,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: i * 0.15,
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
 export function MicButton({ state, onPress, size='normal' }: {
   state: MicState; onPress: () => void; size?: 'normal'|'large';
 }) {
@@ -41,6 +64,8 @@ export function MicButton({ state, onPress, size='normal' }: {
         >
           {state === 'processing'
             ? <motion.div className="h-5 w-5 rounded-full border-2" style={{ borderColor:'#00e1ff', borderTopColor:'transparent' }} animate={{ rotate:360 }} transition={{ duration:0.7, repeat:Infinity, ease:'linear' }} />
+            : state === 'listening'
+            ? <Waveform color={color} size={iconSize} />
             : <Mic size={iconSize} strokeWidth={1.8} style={{ color, filter:isActive?`drop-shadow(0 0 7px ${color})`:'none', transition:'color 0.3s,filter 0.3s' }} />
           }
         </motion.button>

@@ -1,4 +1,4 @@
-export type Screen = 'home' | 'production' | 'documents' | 'assistant' | 'fermentadores' | 'recetas' | 'alertas' | 'analisis';
+export type Screen = 'home' | 'production' | 'documents' | 'assistant' | 'fermentadores' | 'recetas' | 'alertas' | 'analisis' | 'logs';
 
 export const bootSequence = [
   { label: 'AI CORE',           icon: '◈', delay: 480, color: '#FFAA00' },

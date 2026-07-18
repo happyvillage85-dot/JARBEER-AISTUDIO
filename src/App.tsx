@@ -14,10 +14,13 @@ import { Fermentadores } from './screens/Fermentadores';
 import { Recetas } from './screens/Recetas';
 import { Alertas } from './screens/Alertas';
 import { Analisis } from './screens/Analisis';
+import { Logs } from './screens/Logs';
+import { DiagnosticConsole } from './components/DiagnosticConsole';
 import type { Screen, ChatMessage } from './data/mockData';
 import { initialChat, voiceCommands, BATCHES, documents } from './data/mockData';
 import type { MicState } from './components/MicButton';
 import { playSound } from './lib/sound';
+import { haptics } from './lib/haptics';
 import { getMode, setMode as persistMode, type SystemMode } from './lib/config';
 import { api, setMissingApiKeyHandler } from './lib/api';
 import {
@@ -40,7 +43,9 @@ export default function App() {
   const [typing, setTyping]   = useState(false);
   const [sound, setSound]     = useState(true);
   const [voiceOn, setVoiceOn] = useState(true);
+  const [selectedVoice, setSelectedVoice] = useState(() => localStorage.getItem('jarbeer-voice') || '');
   const [mode, setModeState]  = useState<SystemMode>(() => getMode());
+  const [showDiagnostic, setShowDiagnostic] = useState(false);
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const timers                = useRef<ReturnType<typeof setTimeout>[]>([]);
   const transcriptRef         = useRef('');
@@ -48,6 +53,10 @@ export default function App() {
   useEffect(() => {
     setMissingApiKeyHandler(() => setShowApiKeyModal(true));
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('jarbeer-voice', selectedVoice);
+  }, [selectedVoice]);
 
   const clearTimers = () => { timers.current.forEach(clearTimeout); timers.current=[]; };
 
@@ -88,13 +97,30 @@ export default function App() {
     const lastMsg = msgs[msgs.length - 1];
     const isCleanHistoryPrompt = lastMsg && lastMsg.role === 'assistant' && lastMsg.content.includes('¿Limpiamos el historial de este chat para prevenir alucinaciones?');
 
+    if (lower.includes('modo diagnóstico') || lower.includes('diagnostico')) {
+      playSound('confirm', sound);
+      setShowDiagnostic(prev => {
+        const next = !prev;
+        speak(next ? 'Modo diagnóstico activado. Mostrando telemetría.' : 'Modo diagnóstico desactivado.', voiceOn, selectedVoice);
+        setMsgs(p => [
+          ...p,
+          { id: `u${Date.now()}`, role: 'user', content: userText, timestamp: now() },
+          { id: `a${Date.now()}`, role: 'assistant', content: next ? 'Modo diagnóstico activado. Mostrando telemetría en pantalla.' : 'Modo diagnóstico desactivado.', timestamp: now() }
+        ]);
+        return next;
+      });
+      setTyping(false);
+      setMic('idle');
+      return;
+    }
+
     if (isCleanHistoryPrompt) {
       if (lower === 'y' || lower === 'yes' || lower === 'si' || lower === 'sí' || lower === 'limpiar' || lower === 'clear' || lower === 's') {
         playSound('confirm', sound);
         setMsgs(initialChat);
         setTyping(false);
         setMic('idle');
-        speak('Historial de chat limpiado, socio. Listo para empezar de cero sin interferencias.', voiceOn);
+        speak('Historial de chat limpiado, socio. Listo para empezar de cero sin interferencias.', voiceOn, selectedVoice);
         return;
       } else if (lower === 'n' || lower === 'no') {
         playSound('confirm', sound);
@@ -105,7 +131,7 @@ export default function App() {
         ]);
         setTyping(false);
         setMic('idle');
-        speak('Entendido, socio. Mantendremos la sesión activa.', voiceOn);
+        speak('Entendido, socio. Mantendremos la sesión activa.', voiceOn, selectedVoice);
         return;
       }
     }
@@ -127,6 +153,11 @@ export default function App() {
     let reply = match?.response ?? 'Comando recibido. Procesando...';
     let usedGemini = false;
     let geminiReply = '';
+
+    if (lower.includes('hora')) {
+      reply = `Son las ${now()}.`;
+      usedGemini = false;
+    }
 
     try {
       const msgId = `a${Date.now()}`;
@@ -162,11 +193,11 @@ export default function App() {
 
     if (!usedGemini) {
       playSound('confirm', sound);
-      speak(reply, voiceOn);
+      speak(reply, voiceOn, selectedVoice);
       setMsgs(p=>[...p,{id:`a${Date.now()}`,role:'assistant',content:reply,timestamp:now(),navigateTo:match?.target}]);
     } else {
       playSound('confirm', sound);
-      speak(geminiReply, voiceOn);
+      speak(geminiReply, voiceOn, selectedVoice);
       if (match?.target) {
         setMsgs(p => {
           const last = p[p.length-1];
@@ -182,12 +213,13 @@ export default function App() {
     setMic('idle');
     api.resetAvatar().catch(()=>{});
     if (match?.action==='navigate' && match.target) setTimeout(()=>setScreen(match.target!), 600);
-  }, [sound, voiceOn, msgs, mode, buildFactoryContext]);
+  }, [sound, voiceOn, selectedVoice, msgs, mode, buildFactoryContext]);
 
   const handleMic = useCallback(() => {
     if (mic === 'listening') {
       stopListening();
       setMic('idle');
+      haptics.micStop();
       return;
     }
     if (mic !== 'idle') return;
@@ -196,12 +228,14 @@ export default function App() {
 
     if (!isVoiceRecognitionAvailable()) {
       const msg = 'Reconocimiento de voz no disponible en este navegador. Usa Chrome o Edge, o escribe tu comando.';
-      speak(msg, voiceOn);
+      speak(msg, voiceOn, selectedVoice);
       setMsgs(p=>[...p,{id:`a${Date.now()}`,role:'assistant',content:msg,timestamp:now()}]);
+      haptics.error();
       return;
     }
 
     playSound('listen', sound);
+    haptics.micStart();
     setMic('listening');
     transcriptRef.current = '';
     let resuelto = false;
@@ -212,6 +246,7 @@ export default function App() {
         if (isFinal && !resuelto) {
           resuelto = true;
           playSound('process', sound);
+          haptics.light();
           setMic('processing');
           setTimeout(() => respondTo(transcript), 300);
         }
@@ -219,12 +254,13 @@ export default function App() {
       (_error) => {
         resuelto = true;
         setMic('idle');
+        haptics.error();
       },
       () => {
         setMic(current => current === 'listening' ? 'idle' : current);
       }
     );
-  }, [mic, sound, voiceOn, respondTo]);
+  }, [mic, sound, voiceOn, selectedVoice, respondTo]);
 
   const handleSend = useCallback((text: string) => {
     respondTo(text);
@@ -251,6 +287,7 @@ export default function App() {
         onClose={() => setShowApiKeyModal(false)} 
         onSave={() => setShowApiKeyModal(false)} 
       />
+      <DiagnosticConsole isVisible={showDiagnostic} />
       {booted && (
         <>
           {/* ── Desktop layout: TopNav + content + StatusBar ── */}
@@ -258,6 +295,7 @@ export default function App() {
             <TopNav active={screen} onNavigate={navigate} mode={mode} onToggleMode={toggleMode}
               soundEnabled={sound} onToggleSound={()=>setSound(v=>!v)}
               onOpenAssistant={()=>navigate('assistant')} alertCount={0}
+              onOpenLogs={()=>navigate('logs')}
             />
             <div className="relative z-10 flex-1 overflow-hidden">
               <AnimatePresence mode="wait">
@@ -269,7 +307,8 @@ export default function App() {
                   {screen==='recetas'        && <Recetas/>}
                   {screen==='alertas'        && <Alertas/>}
                   {screen==='analisis'       && <Analisis/>}
-                  {screen==='assistant'      && <Assistant messages={msgs} micState={mic} onMic={handleMic} onSend={handleSend} typing={typing} onNavigate={navigate} mode={mode}/>}
+                  {screen==='logs'           && <Logs/>}
+                  {screen==='assistant'      && <Assistant messages={msgs} micState={mic} onMic={handleMic} onSend={handleSend} typing={typing} onNavigate={navigate} mode={mode} selectedVoice={selectedVoice} setSelectedVoice={setSelectedVoice}/>}
                 </motion.div>
               </AnimatePresence>
             </div>
@@ -288,7 +327,8 @@ export default function App() {
                   {screen==='recetas'        && <Recetas/>}
                   {screen==='alertas'        && <Alertas/>}
                   {screen==='analisis'       && <Analisis/>}
-                  {screen==='assistant'      && <Assistant messages={msgs} micState={mic} onMic={handleMic} onSend={handleSend} typing={typing} onNavigate={navigate} mode={mode}/>}
+                  {screen==='logs'           && <Logs/>}
+                  {screen==='assistant'      && <Assistant messages={msgs} micState={mic} onMic={handleMic} onSend={handleSend} typing={typing} onNavigate={navigate} mode={mode} selectedVoice={selectedVoice} setSelectedVoice={setSelectedVoice}/>}
                 </motion.div>
               </AnimatePresence>
             </div>

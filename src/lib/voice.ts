@@ -162,21 +162,29 @@ export function unlockSpeechSynthesis(): void {
   } catch { /* noop */ }
 }
 
-export function speak(text: string, enabled: boolean = true): void {
+export function speak(text: string, enabled: boolean = true, voiceName?: string): void {
   if (!enabled) return;
   if (typeof window === 'undefined' || !window.speechSynthesis) return;
 
   // Salvaguarda: cancela cualquier emisión previa antes de iniciar una nueva.
   window.speechSynthesis.cancel();
 
-  if (!preferredVoice) refreshVoice();
+  let voiceToUse = preferredVoice;
+  if (voiceName) {
+    const voices = window.speechSynthesis.getVoices();
+    const found = voices.find(v => v.name === voiceName);
+    if (found) voiceToUse = found;
+  } else if (!preferredVoice) {
+    refreshVoice();
+    voiceToUse = preferredVoice;
+  }
 
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'es-ES';
   utterance.pitch = 0.85;
   utterance.rate = 0.95;
   utterance.volume = 1;
-  if (preferredVoice) utterance.voice = preferredVoice;
+  if (voiceToUse) utterance.voice = voiceToUse;
 
   // Chrome a veces "traga" la primera emisión si se llama justo después de
   // cancel(); un pequeño margen lo evita de forma fiable.

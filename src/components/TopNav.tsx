@@ -22,10 +22,12 @@ interface TopNavProps {
   onToggleSound: () => void;
   onOpenAssistant: () => void;
   alertCount?: number;
+  onOpenLogs?: () => void;
 }
 
-export function TopNav({ active, onNavigate, mode, onToggleMode, soundEnabled, onToggleSound, onOpenAssistant, alertCount = 0 }: TopNavProps) {
+export function TopNav({ active, onNavigate, mode, onToggleMode, soundEnabled, onToggleSound, onOpenAssistant, alertCount = 0, onOpenLogs }: TopNavProps) {
   const [time, setTime] = useState(fmtTime);
+  const [clickCount, setClickCount] = useState(0);
   const modeLabel = MODE_LABELS[mode];
   const h = new Date().getHours();
   const greeting = h < 12 ? 'Buenos días' : h < 20 ? 'Buenas tardes' : 'Buenas noches';
@@ -34,6 +36,22 @@ export function TopNav({ active, onNavigate, mode, onToggleMode, soundEnabled, o
     const t = setInterval(() => setTime(fmtTime()), 1000);
     return () => clearInterval(t);
   }, []);
+
+  useEffect(() => {
+    if (clickCount > 0) {
+      const timer = setTimeout(() => setClickCount(0), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [clickCount]);
+
+  const handleLogoClick = () => {
+    if (clickCount >= 4) {
+      setClickCount(0);
+      if (onOpenLogs) onOpenLogs();
+    } else {
+      setClickCount(prev => prev + 1);
+    }
+  };
 
   return (
     <div className="relative z-30 flex items-center justify-between px-5 py-2.5"
@@ -45,7 +63,7 @@ export function TopNav({ active, onNavigate, mode, onToggleMode, soundEnabled, o
       }}
     >
       {/* ── Logo + Brand ── */}
-      <div className="flex items-center gap-3 shrink-0 min-w-[260px]">
+      <div className="flex items-center gap-3 shrink-0 min-w-[260px] cursor-pointer" onClick={handleLogoClick}>
         <div className="flex h-9 w-9 items-center justify-center rounded-xl"
           style={{ background: 'linear-gradient(135deg,rgba(255,170,0,0.22),rgba(255,170,0,0.06))', border: '1.5px solid rgba(255,170,0,0.45)' }}
         >
@@ -128,8 +146,8 @@ export function TopNav({ active, onNavigate, mode, onToggleMode, soundEnabled, o
         {/* System status */}
         <div className="flex flex-col items-end">
           <div className="flex items-center gap-1.5">
-            <span className="live-dot" />
-            <span className="font-mono text-[9px] font-bold tracking-wider" style={{ color: '#34d399' }}>SISTEMA ONLINE</span>
+            <span className="h-1.5 w-1.5 rounded-full" style={{ background: modeLabel.dot, boxShadow: `0 0 6px ${modeLabel.dot}` }} />
+            <span className="font-mono text-[9px] font-bold tracking-wider" style={{ color: modeLabel.color }}>SISTEMA {modeLabel.short}</span>
           </div>
           <span className="font-mono text-[8px]" style={{ color: 'rgba(74,96,112,0.6)' }}>Sincronizado {time}</span>
         </div>
