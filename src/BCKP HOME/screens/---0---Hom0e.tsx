@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  X, Activity, Volume2, VolumeX, Shield, Wifi, Mic, Zap, Beaker
+import { 
+  X, MessageSquare, Activity, FlaskConical, Clock, Cpu, 
+  ChevronRight, Home as HomeIcon, BarChart3, FileText, 
+  Settings, Users, AlertTriangle, Thermometer, Droplets,
+  Gauge, Calendar, Zap, Beaker, Microscope, ClipboardList
 } from 'lucide-react';
-
-import type { Screen } from '../data/mockData';
-import type { SystemMode } from '../lib/config';
-import type { MicState } from '../components/MicButton';
 
 // ─── Datos de tanques (F1-F6) ──────────────────────────────────────────────
 const TANKS = [
@@ -21,109 +20,57 @@ const TANKS = [
 type Tank = typeof TANKS[0];
 type DetailTab = 'resumen' | 'graficas' | 'parametros' | 'historial';
 
-// ─── Posiciones de cada tanque sobre la imagen de fondo (fondo_pc.png) ────
-// Ajusta estos porcentajes (top/left) hasta que cada marcador quede
-// exactamente encima del tanque físico correspondiente en tu imagen.
-const TANK_POSITIONS: Record<string, { top: string; left: string }> = {
-  F1: { top: '48%', left: '10%' },
-  F2: { top: '48%', left: '26%' },
-  F3: { top: '48%', left: '42%' },
-  F4: { top: '48%', left: '58%' },
-  F5: { top: '48%', left: '74%' },
-  F6: { top: '48%', left: '90%' },
-};
-
-interface HomeProps {
-  micState: MicState;
-  onMic: () => void;
-  onNavigate: (screen: Screen) => void;
-  soundEnabled: boolean;
-  onToggleSound: () => void;
-  mode: SystemMode;
-  onToggleMode: () => void;
-}
-
-export function Home({
-  micState,
-  onMic,
-  onNavigate,
-  soundEnabled,
-  onToggleSound,
-  mode,
-  onToggleMode,
-}: HomeProps) {
+export function Home() {
   const [selected, setSelected] = useState<Tank | null>(null);
   const [tab, setTab] = useState<DetailTab>('resumen');
 
   return (
-    <div className="relative min-h-screen w-full">
-      {/* ─── BARRA SUPERIOR MÍNIMA (no tapa el fondo) ─── */}
-      <div className="absolute top-3 left-3 right-3 z-20 flex items-center justify-between">
-        <div className="glass px-3 py-1.5 rounded-xl flex items-center gap-2">
-          <span className="live-dot" />
-          <div className="leading-tight">
-            <p className="text-xs font-bold text-cyan-400 font-mono tracking-wider">J.A.R.B.E.E.R.</p>
-            <p className="text-[8px] text-gray-500 font-mono tracking-widest">AI CORE ONLINE</p>
-          </div>
+    <div className="min-h-screen bg-[#050a15] p-4 md:p-6">
+      {/* ─── HEADER ─── */}
+      <div className="flex justify-between items-start mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-cyan-400 font-mono tracking-wider">
+            J.A.R.B.E.E.R.
+          </h1>
+          <p className="text-xs text-gray-500 font-mono tracking-[0.2em]">
+            Just A Real Brewing Engineering Expert Reasoner
+          </p>
+          <p className="text-[10px] text-amber-500 font-mono tracking-widest mt-1">
+            FERMENTANDO SUEÑOS
+          </p>
         </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onToggleSound}
-            className="glass p-2 rounded-xl text-gray-400 hover:text-cyan-400 transition-all"
-            title={soundEnabled ? 'Silenciar' : 'Activar sonido'}
-          >
-            {soundEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
-          </button>
-
-          <button
-            onClick={onToggleMode}
-            className={`glass p-2 rounded-xl transition-all ${
-              mode === 'bunker' ? 'text-amber-400' : 'text-cyan-400'
-            }`}
-            title={mode === 'bunker' ? 'Modo Bunker (offline)' : 'Modo Online'}
-          >
-            {mode === 'bunker' ? <Shield size={14} /> : <Wifi size={14} />}
-          </button>
-
-          <button
-            onClick={() => onNavigate('assistant')}
-            className="glass p-2 rounded-xl text-gray-400 hover:text-amber-400 transition-all"
-            title="Abrir asistente"
-          >
-            <Zap size={14} />
-          </button>
-
-          <button
-            onClick={onMic}
-            className={`glass p-2 rounded-xl transition-all ${
-              micState === 'listening'
-                ? 'text-red-400'
-                : micState === 'processing'
-                ? 'text-amber-400'
-                : micState === 'responding'
-                ? 'text-cyan-400'
-                : 'text-gray-400'
-            }`}
-            title="Hablar con J.A.R.B.E.E.R."
-          >
-            <Mic size={14} className={micState === 'listening' ? 'animate-pulse' : ''} />
-          </button>
+        <div className="text-right">
+          <div className="text-sm text-green-400 font-mono flex items-center gap-2">
+            <span className="live-dot" />
+            AI CORE ONLINE
+          </div>
+          <p className="text-[10px] text-gray-600 font-mono">v1.0.0 BETA</p>
         </div>
       </div>
 
-      {/* ─── MARCADORES DE TANQUES SOBRE EL FONDO (solo datos básicos) ─── */}
-      {TANKS.map((tank, i) => (
-        <TankMarker
-          key={tank.id}
-          tank={tank}
-          position={TANK_POSITIONS[tank.id]}
-          delay={i * 0.05}
-          onClick={() => setSelected(tank)}
-        />
-      ))}
+      {/* ─── TANQUES GRID (6 tanques) ─── */}
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="text-sm font-mono text-cyan-400 tracking-wider flex items-center gap-2">
+            <Beaker size={14} />
+            FERMENTADORES PRINCIPALES
+          </h2>
+          <span className="text-[10px] text-gray-600 font-mono">6 ACTIVOS</span>
+        </div>
 
-      {/* ─── DETALLE DEL TANQUE SELECCIONADO (ventana flotante / modal) ─── */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          {TANKS.map((tank, i) => (
+            <TankCard
+              key={tank.id}
+              tank={tank}
+              delay={i * 0.05}
+              onClick={() => setSelected(tank)}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* ─── DETALLE DEL TANQUE SELECCIONADO ─── */}
       <AnimatePresence>
         {selected && (
           <TankDetail
@@ -135,69 +82,91 @@ export function Home({
         )}
       </AnimatePresence>
 
-      {/* ─── PANEL INFERIOR: CURVA + RECOMENDACIÓN (sobre el fondo, con cristal) ─── */}
-      <div className="absolute bottom-3 left-3 right-3 z-10 flex flex-col md:flex-row gap-3">
-        <div className="glass p-4 rounded-xl flex-1">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="text-sm font-mono text-cyan-400 tracking-wider flex items-center gap-2">
-              <Beaker size={14} />
-              CURVA DE FERMENTACIÓN
-            </h3>
-            <div className="flex gap-4 text-[10px]">
-              <span className="text-amber-400">● Temperatura (°C)</span>
-              <span className="text-cyan-400">● Densidad (SG)</span>
-            </div>
+      {/* ─── CURVA DE FERMENTACIÓN (para F3 por defecto) ─── */}
+      <div className="glass p-4 rounded-xl mt-4">
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="text-sm font-mono text-cyan-400 tracking-wider">CURVA DE FERMENTACIÓN</h3>
+          <div className="flex gap-4 text-[10px]">
+            <span className="text-amber-400">● Temperatura (°C)</span>
+            <span className="text-cyan-400">● Densidad (SG)</span>
           </div>
-          <FermentationChart />
         </div>
+        <FermentationChart />
+      </div>
 
-        <div className="glass p-4 rounded-xl border border-amber-500/10 md:max-w-xs">
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-lg bg-amber-500/10 shrink-0">
-              <Zap size={16} className="text-amber-400" />
-            </div>
-            <div>
-              <p className="text-[10px] font-mono text-amber-400 tracking-wider">RECOMENDACIÓN DE J.A.R.B.E.E.R.</p>
-              <p className="text-sm text-gray-300 mt-1">
-                Mantener la temperatura actual. La densidad está en el rango óptimo. Vigilar pH durante las próximas 24h.
-              </p>
-            </div>
+      {/* ─── RECOMENDACIÓN IA ─── */}
+      <div className="glass p-4 rounded-xl mt-4 border border-amber-500/10">
+        <div className="flex items-start gap-3">
+          <div className="p-2 rounded-lg bg-amber-500/10">
+            <Zap size={16} className="text-amber-400" />
+          </div>
+          <div>
+            <p className="text-[10px] font-mono text-amber-400 tracking-wider">RECOMENDACIÓN DE J.A.R.B.E.E.R.</p>
+            <p className="text-sm text-gray-300 mt-1">
+              Mantener la temperatura actual. La densidad está en el rango óptimo. Vigilar pH durante las próximas 24h.
+            </p>
           </div>
         </div>
+      </div>
+
+      {/* ─── FOOTER ─── */}
+      <div className="mt-6 flex justify-between text-[10px] text-gray-700 font-mono border-t border-gray-800/50 pt-3">
+        <span>FÁBRICA: CERVECERÍA ARTESANAL PREMIUM</span>
+        <span>LOTES ACTIVOS: 6</span>
+        <span>CAPACIDAD UTILIZADA: 78%</span>
+        <span>PRÓXIMA LIMPIEZA CIP: 12:45</span>
+        <span>24°C</span>
+        <span>55% HR</span>
       </div>
     </div>
   );
 }
 
-// ─── TANK MARKER ────────────────────────────────────────────────────────────
-// Marcador mínimo y semitransparente: solo ID + % de fermentación.
-// Al hacer clic, abre el modal TankDetail con toda la información.
-function TankMarker({
-  tank,
-  position,
-  delay,
-  onClick,
-}: {
-  tank: Tank;
-  position: { top: string; left: string };
-  delay: number;
-  onClick: () => void;
-}) {
+// ─── TANK CARD ──────────────────────────────────────────────────────────────
+function TankCard({ tank, delay, onClick }: { tank: Tank; delay: number; onClick: () => void }) {
   return (
     <motion.button
       onClick={onClick}
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.3 }}
-      whileHover={{ scale: 1.08 }}
+      whileHover={{ scale: 1.03, y: -4 }}
       whileTap={{ scale: 0.95 }}
-      className="absolute z-10 flex flex-col items-center gap-1 glass px-2 py-1.5 rounded-xl"
-      style={{ top: position.top, left: position.left, transform: 'translate(-50%, -50%)' }}
+      className="glass p-3 rounded-xl text-center transition-all"
     >
-      <TankSVG progress={tank.fermentation} size={30} />
-      <div className="text-center leading-tight">
-        <p className="text-[10px] font-bold text-amber-400">{tank.id}</p>
-        <p className="text-[8px] text-gray-400 font-mono">{tank.fermentation}%</p>
+      <div className="flex justify-between items-start mb-1">
+        <span className="text-sm font-bold text-amber-400">{tank.id}</span>
+        <span className="text-[8px] text-green-400 font-mono">ACTIVO</span>
+      </div>
+      
+      <div className="flex justify-center my-2">
+        <TankSVG progress={tank.fermentation} size={48} />
+      </div>
+
+      <div className="grid grid-cols-3 gap-1 text-[9px] font-mono">
+        <div>
+          <p className="text-gray-600">{tank.temp}°C</p>
+          <p className="text-gray-700 text-[7px]">TEMP</p>
+        </div>
+        <div>
+          <p className="text-cyan-400">{tank.sg.toFixed(3)}</p>
+          <p className="text-gray-700 text-[7px]">SG</p>
+        </div>
+        <div>
+          <p className="text-gray-300">{tank.ph.toFixed(2)}</p>
+          <p className="text-gray-700 text-[7px]">pH</p>
+        </div>
+      </div>
+
+      <div className="mt-2 text-[8px] text-gray-600 font-mono">
+        {tank.kpi}
+      </div>
+
+      <div className="mt-1 h-1 w-full bg-gray-800 rounded-full overflow-hidden">
+        <div 
+          className="h-full bg-gradient-to-r from-amber-500 to-amber-400"
+          style={{ width: `${tank.fermentation}%` }}
+        />
       </div>
     </motion.button>
   );
@@ -219,24 +188,21 @@ function TankSVG({ progress, size }: { progress: number; size: number }) {
       {/* Líquido */}
       <rect x="16" y={10 + 35 - fillHeight} width="28" height={fillHeight} fill="url(#beerGrad)" rx="1" opacity="0.7" />
       {/* Cono inferior */}
-      <path d="M 15 45 L 45 45 L 30 55 Z" fill="none" stroke="#FFAA00" strokeWidth="1.5" opacity="0.6" />
+      <polygon points="18,45 30,52 42,45" fill="none" stroke="#FFAA00" strokeWidth="1.5" opacity="0.4" />
+      {/* Tapa superior */}
+      <ellipse cx="30" cy="10" rx="12" ry="2" fill="rgba(255,200,80,0.1)" stroke="#FFD060" strokeWidth="0.8" />
     </svg>
   );
 }
 
-// ─── TANK DETAIL (modal) ────────────────────────────────────────────────────
-function TankDetail({
-  tank,
-  tab,
-  setTab,
-  onClose,
-}: {
+// ─── TANK DETAIL (POPUP) ──────────────────────────────────────────────────
+function TankDetail({ tank, tab, setTab, onClose }: {
   tank: Tank;
   tab: DetailTab;
   setTab: (t: DetailTab) => void;
   onClose: () => void;
 }) {
-  const TABS = [
+  const tabs = [
     { id: 'resumen', label: 'RESUMEN' },
     { id: 'graficas', label: 'GRÁFICAS' },
     { id: 'parametros', label: 'PARÁMETROS' },
@@ -248,30 +214,32 @@ function TankDetail({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
       onClick={onClose}
     >
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+      
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.9, y: 20 }}
+        className="relative z-10 w-full max-w-2xl max-h-[85vh] overflow-y-auto glass p-6 rounded-2xl"
         onClick={(e) => e.stopPropagation()}
-        className="glass rounded-2xl p-5 w-full max-w-md max-h-[85vh] overflow-y-auto"
       >
         {/* Header */}
         <div className="flex justify-between items-start mb-4">
           <div>
-            <p className="text-lg font-bold text-amber-400">{tank.id}</p>
-            <p className="text-[10px] text-gray-500 font-mono">DETALLE DE FERMENTACIÓN</p>
+            <h2 className="text-2xl font-bold text-amber-400">{tank.id}</h2>
+            <p className="text-sm text-gray-500 font-mono">DETALLE DE FERMENTACIÓN</p>
           </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
-            <X size={18} />
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-white/5">
+            <X size={20} className="text-gray-500" />
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 mb-4 border-b border-gray-800 pb-2">
-          {TABS.map((t) => (
+        <div className="flex gap-1 mb-4 border-b border-gray-800/50 pb-2">
+          {tabs.map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id as DetailTab)}
@@ -453,7 +421,7 @@ function FermentationChart() {
       {[0, 5, 10, 15, 20].map((d) => (
         <text key={d} x={x(d)} y={pad.top + chartH + 14} textAnchor="middle" fontSize="7" fill="rgba(255,255,255,0.2)">{d}</text>
       ))}
-      <text x={W / 2} y={H - 2} textAnchor="middle" fontSize="7" fill="rgba(255,255,255,0.15)" fontFamily="monospace">DÍAS</text>
+      <text x={W / 2} y={H - 2} textAnchor="middle" fontSize="7" fill="rgba(255,255,255,0.15) font-mono">DÍAS</text>
 
       {/* Leyenda */}
       <text x={pad.left} y={10} fontSize="7" fill="#FFAA00">● Temperatura</text>

@@ -15,7 +15,7 @@ export function BootScreen({ onComplete, soundEnabled }: BootScreenProps) {
   const [exit, setExit]   = useState(false);
 
   const handleUnlock = () => {
-    // Interacción real del usuario: aquí se desbloquean MIS COJONES CON audio y voz
+    // Interacción real del usuario: aquí se desbloquean audio y voz
     // en navegadores con política anti-autoplay estricta.
     unlockAudio();
     unlockSpeechSynthesis();
@@ -59,7 +59,7 @@ export function BootScreen({ onComplete, soundEnabled }: BootScreenProps) {
       {/* Cinematic blurred background of the brewery control room */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <img 
-          src="/src/assets/images/Dasboard Beta2.8.jpg" 
+          src="/src/assets/images/fondo_pc_1784321905664.jpg" 
           alt="" 
           className="absolute inset-0 h-full w-full object-cover blur-md opacity-35" 
           referrerPolicy="no-referrer"
@@ -203,7 +203,7 @@ export function BootScreen({ onComplete, soundEnabled }: BootScreenProps) {
       </AnimatePresence>
 
       <div className="absolute bottom-5 left-1/2 -translate-x-1/2 font-mono text-[9px] tracking-[0.3em] uppercase" style={{ color:'rgba(42,61,82,0.7)' }}>
-        {APP_VERSION} · PROTOTYPE ONE B
+        {APP_VERSION} · PROTOTYPE ONE
       </div>
     </motion.div>
   );
