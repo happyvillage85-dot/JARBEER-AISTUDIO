@@ -304,12 +304,7 @@ export default function App() {
                   {screen==='production'    && <Production/>}
                   {screen==='documents'     && <Documents/>}
                   {screen==='fermentadores'  && <Fermentadores/>}
-                  {screen==='recetas'        && (
-  <Recetas 
-    onNavigate={navigate} 
-    onSend={handleSend} 
-  />
-)}
+                  {screen==='recetas'        && <Recetas/>}
                   {screen==='alertas'        && <Alertas/>}
                   {screen==='analisis'       && <Analisis/>}
                   {screen==='logs'           && <Logs/>}
@@ -329,12 +324,7 @@ export default function App() {
                   {screen==='production'    && <Production/>}
                   {screen==='documents'     && <Documents/>}
                   {screen==='fermentadores'  && <Fermentadores/>}
-                  {screen==='recetas'        && (
-  <Recetas 
-    onNavigate={navigate} 
-    onSend={handleSend} 
-  />
-)}
+                  {screen==='recetas'        && <Recetas/>}
                   {screen==='alertas'        && <Alertas/>}
                   {screen==='analisis'       && <Analisis/>}
                   {screen==='logs'           && <Logs/>}

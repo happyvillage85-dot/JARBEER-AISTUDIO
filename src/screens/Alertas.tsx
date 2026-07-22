@@ -22,6 +22,8 @@ const STYLES = {
 export function Alertas() {
   const [apiKey, setApiKey] = useState('');
   const [saved, setSaved] = useState(false);
+  // 🌟 MEJORA: Estado local en memoria para guardar las alertas resueltas
+  const [resolvedAlerts, setResolvedAlerts] = useState<number[]>([]);
 
   useEffect(() => {
     const stored = localStorage.getItem('GEMINI_API_KEY');
@@ -76,9 +78,9 @@ export function Alertas() {
                 {saved ? 'Guardada' : 'Guardar'}
               </button>
             </div>
-            <p className="font-sans text-[10px] text-gray-500 mt-3 flex items-center gap-1.5">
+            <div className="font-sans text-[10px] text-gray-500 mt-3 flex items-center gap-1.5">
               <AlertTriangle size={10} /> Esta clave se guarda localmente en tu navegador para interactuar con la IA de la planta.
-            </p>
+            </div>
           </GlassCard>
         </motion.div>
 
@@ -92,23 +94,58 @@ export function Alertas() {
         {/* Alerts List */}
         <div className="space-y-3">
           {ALERTAS.map((a, i) => {
+            const isResolved = resolvedAlerts.includes(a.id);
             const s = STYLES[a.level as keyof typeof STYLES];
             const Icon = s.icon;
             return (
-              <motion.div key={a.id} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 + i * 0.06 }}>
-                <GlassCard className="p-4" corners delay={0.1 + i * 0.06}>
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
-                      style={{ background: s.bg, border: `1px solid ${s.border}`, color: s.color }}
-                    ><Icon size={16} /></div>
-                    <div className="flex-1">
-                      <p className="font-display text-sm font-bold text-white">{a.title}</p>
-                      <p className="mt-0.5 font-sans text-xs leading-relaxed" style={{ color: 'rgba(180,200,216,0.8)' }}>{a.desc}</p>
-                      <div className="mt-2 flex items-center gap-1.5">
-                        <Clock size={10} style={{ color: 'rgba(74,96,112,0.5)' }} />
-                        <span className="font-mono text-[9px]" style={{ color: 'rgba(74,96,112,0.6)' }}>{a.time}</span>
+              <motion.div 
+                key={a.id} 
+                initial={{ opacity: 0, x: -12 }} 
+                animate={{ opacity: isResolved ? 0.4 : 1, x: 0 }} 
+                transition={{ delay: 0.1 + i * 0.06 }}
+                style={{ transition: 'opacity 0.3s ease' }}
+              >
+                <GlassCard 
+                  className="p-4" 
+                  corners 
+                  delay={0.1 + i * 0.06}
+                  style={{
+                    borderColor: isResolved ? 'rgba(255,255,255,0.08)' : s.border,
+                    transition: 'border-color 0.3s ease'
+                  }}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-start gap-3 flex-1">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+                        style={{ 
+                          background: isResolved ? 'rgba(255,255,255,0.02)' : s.bg, 
+                          border: `1px solid ${isResolved ? 'rgba(255,255,255,0.05)' : s.border}`, 
+                          color: isResolved ? 'rgba(74,96,112,0.4)' : s.color,
+                          transition: 'all 0.3s ease'
+                        }}
+                      ><Icon size={16} /></div>
+                      <div className="flex-1">
+                        <p className={`font-display text-sm font-bold ${isResolved ? 'text-gray-500 line-through' : 'text-white'}`}>{a.title}</p>
+                        <p className="mt-0.5 font-sans text-xs leading-relaxed" style={{ color: isResolved ? 'rgba(74,96,112,0.5)' : 'rgba(180,200,216,0.8)' }}>{a.desc}</p>
+                        <div className="mt-2 flex items-center gap-1.5">
+                          <Clock size={10} style={{ color: 'rgba(74,96,112,0.5)' }} />
+                          <span className="font-mono text-[9px]" style={{ color: 'rgba(74,96,112,0.6)' }}>{a.time}</span>
+                        </div>
                       </div>
                     </div>
+
+                    {!isResolved && (
+                      <button
+                        onClick={() => {
+                          setResolvedAlerts(prev => [...prev, a.id]);
+                          haptics.light();
+                        }}
+                        className="rounded-xl p-2 transition-all duration-200 hover:bg-white/5 border border-transparent hover:border-white/10 text-gray-500 hover:text-[#34d399]"
+                        title="Marcar como resuelto"
+                      >
+                        <CheckCircle2 size={16} />
+                      </button>
+                    )}
                   </div>
                 </GlassCard>
               </motion.div>

@@ -6,7 +6,7 @@ import { MicButton, type MicState } from '../components/MicButton';
 import type { ChatMessage, Screen } from '../data/mockData';
 import { voiceCommands } from '../data/mockData';
 import { MODE_LABELS, type SystemMode } from '../lib/config';
-import { listAvailableSpanishVoices, cancelSpeech } from '../lib/voice';
+import { listAvailableSpanishVoices, cancelSpeech } from '../lib/voice'; // 🌟 Integrado para cancelar voz
 
 const SUGGESTIONS = ['Abre la Golden','Buscar Cascade','Temperatura actual','Abrir receta IPA','Mostrar documentos','Estado del F-04'];
 
@@ -29,6 +29,7 @@ export function Assistant({ messages, micState, onMic, onSend, typing, onNavigat
 
   const send = () => { const t=draft.trim(); if(!t)return; setDraft(''); onSend(t); };
 
+  // 🌟 MEJORA: Manejo interactivo de interrupción de audio sintético
   const handleMicPress = () => {
     if (micState === 'responding') {
       cancelSpeech();
@@ -81,6 +82,7 @@ export function Assistant({ messages, micState, onMic, onSend, typing, onNavigat
         style={{background:'rgba(2,4,8,0.94)',backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',borderTop:'1px solid rgba(255,255,255,0.05)'}}
       >
         <div className="flex items-center gap-3">
+          {/* Conectado a handleMicPress */}
           <MicButton state={micState} onPress={handleMicPress} size="normal"/>
           <div className="relative flex-1">
             <input value={draft} onChange={e=>setDraft(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')send();}}
