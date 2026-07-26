@@ -51,7 +51,8 @@ function buildFactoryContext(body: any) {
     parts.push("\nLotes activos en seguimiento:");
     for (const b of ctx.batches) {
       parts.push(`  • Lote ${b.batch} — ${b.recipe} — Etapa: ${b.stage} (${b.stageProgress}%) — Fermentador: F-${b.fermentadorNum} — Temp actual: ${b.currentTemp}°C — Azúcar: ${b.plato}°Plato — pH actual: ${b.ph}`);
-    }  }
+    }const MODEL_NAME = 'gemini-2.5-flash';
+  }
 
   if (ctx.fermentadores && ctx.fermentadores.length > 0) {
     parts.push("\nEstado de los Fermentadores:");

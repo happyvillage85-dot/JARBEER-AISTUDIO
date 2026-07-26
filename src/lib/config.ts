@@ -8,7 +8,10 @@ export const USER_NAME = 'Juanfran';
 // Modo desarrollo: backend local (VITE_API_URL o localhost:8000).
 export const IS_PRODUCTION = import.meta.env.PROD === true;
 export const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
-export const GEMINI_FUNCTION_URL = '/.netlify/functions/gemini';
+const USE_NETLIFY_PROXY = import.meta.env.DEV || import.meta.env.VITE_USE_NETLIFY_PROXY === 'true';
+export const GEMINI_FUNCTION_URL = USE_NETLIFY_PROXY
+  ? '/.netlify/functions/gemini'
+  : 'https://jarbeer-gemini-worker.pepinillo-v3-0.workers.dev/api/gemini';
 
 export type SystemMode = 'online' | 'bunker';
 

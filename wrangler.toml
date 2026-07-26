@@ -1,0 +1,15 @@
+name = "jarbeer-gemini-worker"
+main = "worker/gemini-worker.ts"
+compatibility_date = "2026-07-01"
+
+# La API Key NO va aquí en texto plano por seguridad.
+# Configúrala como "secret" con este comando (te la pedirá interactivamente,
+# no queda guardada en ningún archivo del repo):
+#
+#   wrangler secret put GEMINI_API_KEY
+#
+# Si quieres seguir soportando el nombre antiguo JARBEER_KEY como fallback:
+#
+#   wrangler secret put JARBEER_KEY
+#
+# [vars] es solo para valores NO sensibles. No pongas la key aquí.

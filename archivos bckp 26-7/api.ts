@@ -25,19 +25,18 @@ async function post<T>(path: string, body: unknown, timeoutMs = 2500): Promise<T
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
-        ...(customKey ? { 'x-gemini-api-key': customKey } : {})
+        'x-gemini-api-key': customKey
       },
       body: JSON.stringify(body),
       signal: ctrl.signal,
     });
     if (!res.ok) {
-      const raw = await res.text();
-      let errMsg = raw;
+      let errMsg = '';
       try {
-        const errJson = JSON.parse(raw);
-        errMsg = errJson.error || errJson.message || raw;
+        const errJson = await res.json();
+        errMsg = errJson.error || errJson.message || JSON.stringify(errJson);
       } catch {
-        // raw ya contiene el texto
+        errMsg = await res.text();
       }
       
       logger.error(`API Error POST ${path}`, errMsg);
@@ -114,7 +113,7 @@ function generateLocalReply(command: string, context?: unknown): string {
     const fNum = parseInt(fMatch[1]);
     const batch = ctx?.batches?.find(b => parseInt(b.fermentadorNum) === fNum) ?? BATCHES.find(b => parseInt(b.fermentadorNum) === fNum);
     if (batch) {
-      return `Fermentador F-0${fNum}: ${batch.recipe}  Lote ${batch.batch}.
+      return `Fermentador F-0${fNum}: ${batch.recipe} — Lote ${batch.batch}.
 Etapa: ${batch.stage} (${batch.stageProgress}% completado).
 Temperatura: ${batch.currentTemp}Â°C (objetivo ${batch.targetTemp}Â°C).
 Â°Plato: ${batch.plato} Â· pH: ${batch.ph}.
@@ -126,7 +125,7 @@ Volumen: ${batch.volume} L.`;
   // Buscar por nombre de receta
   for (const b of BATCHES) {
     if (lower.includes(b.recipe.toLowerCase())) {
-      return `${b.recipe}  Lote ${b.batch}.
+      return `${b.recipe} — Lote ${b.batch}.
 Etapa actual: ${b.stage} (${b.stageProgress}%).
 Fermentador: F-${b.fermentadorNum}.
 Temperatura: ${b.currentTemp}Â°C â†’ ${b.targetTemp}Â°C.
@@ -157,8 +156,8 @@ ABV estimado: ${b.abv}%.`;
   // Documentos
   if (lower.includes('documento') || lower.includes('biblioteca') || lower.includes('libro')) {
     return `Biblioteca documental: ${documents.length} documentos indexados.
-${documents.slice(0, 4).map(d => ` ${d.title} (${d.reference})`).join("\n")}
-Accede desde la pestaa Documentos para buscar y filtrar.`;
+${documents.slice(0, 4).map(d => `• ${d.title} (${d.reference})`).join("\n")}
+Accede desde la pestaña Documentos para buscar y filtrar.`;
   }
 
   // LÃºpulos
@@ -175,8 +174,8 @@ Alfa-Ã¡cidos: ${hop.alpha || 'no especificado'}.`;
       }
       return `No se encontrÃ³ el lÃºpulo "${hopName}" en los lotes activos.`;
     }
-    return `Lpulos en uso:
-${BATCHES.flatMap(b => b.lupulos.map(l => ` ${l.name}  ${l.amount} (${l.addition}) en ${b.recipe}`)).join("\n")}
+    return `Lúpulos en uso:
+${BATCHES.flatMap(b => b.lupulos.map(l => `• ${l.name} — ${l.amount} (${l.addition}) en ${b.recipe}`)).join("\n")}
 `;
   }
 
@@ -184,30 +183,30 @@ ${BATCHES.flatMap(b => b.lupulos.map(l => ` ${l.name}  ${l.amount} (${l.addition
   if (lower.includes('malta') || lower.includes('malt')) {
     const b = BATCHES[0];
     return `Maltas del lote activo (${b.recipe}):
-${b.maltas.map(m => ` ${m.name}: ${m.amount} (EBC ${m.ebc})  ${m.supplier}`).join('\n')}`;
+${b.maltas.map(m => `• ${m.name}: ${m.amount} (EBC ${m.ebc}) — ${m.supplier}`).join('\n')}`;
   }
 
   // Levadura
-  if (lower.includes('levadura') || lower.includes('fermentacin') || lower.includes('fermentacion')) {
+  if (lower.includes('levadura') || lower.includes('fermentación') || lower.includes('fermentacion')) {
     const b = BATCHES[0];
     return `Levadura del lote activo (${b.recipe}):
- Cepa: ${b.levadura.name}
- Laboratorio: ${b.levadura.lab}
- Formato: ${b.levadura.format}
- Inoculacin: ${b.levadura.pitch}
+• Cepa: ${b.levadura.name}
+• Laboratorio: ${b.levadura.lab}
+• Formato: ${b.levadura.format}
+• Inoculación: ${b.levadura.pitch}
 Fermentador: F-${b.fermentadorNum} a ${b.currentTemp}Â°C.`;
   }
 
   // Estado general
   if (lower.includes('estado') || lower.includes('sistema') || lower.includes('general')) {
     return `Estado del sistema J.A.R.B.E.E.R.:
- Estado: ${systemStatus.state}
- Uptime: ${systemStatus.uptime}
- Lote activo: ${systemStatus.activeBatch}
- Alertas: ${systemStatus.alerts}
- Documentos indexados: ${systemStatus.docsIndexed}
- IA: ${systemStatus.aiModel} (${systemStatus.aiStatus})
- Red: ${systemStatus.network}`;
+• Estado: ${systemStatus.state}
+• Uptime: ${systemStatus.uptime}
+• Lote activo: ${systemStatus.activeBatch}
+• Alertas: ${systemStatus.alerts}
+• Documentos indexados: ${systemStatus.docsIndexed}
+• IA: ${systemStatus.aiModel} (${systemStatus.aiStatus})
+• Red: ${systemStatus.network}`;
   }
 
   // Nuevo lote
@@ -227,18 +226,18 @@ Lote activo: ${BATCHES[0].recipe} (${BATCHES[0].batch}) en F-${BATCHES[0].fermen
 Â¿En quÃ© puedo ayudarte?`;
   }
 
-  // Respuesta genrica
+  // Respuesta genérica
   return `Comando no reconocido: "${command}".
 
-Socio, actualmente operamos en modo BNKER (procesamiento local sin conexin a internet). Mis capacidades conversacionales estn restringidas a la monitorizacin directa de la planta.
+Socio, actualmente operamos en modo BÚNKER (procesamiento local sin conexión a internet). Mis capacidades conversacionales están restringidas a la monitorización directa de la planta.
 
 Puedo informarte sobre:
- Estado de lotes y fermentadores (F-01 a F-06)
- Temperaturas, Plato y pH
- Recetas, maltas, lpulos y levaduras
- Documentos indexados
+• Estado de lotes y fermentadores (F-01 a F-06)
+• Temperaturas, °Plato y pH
+• Recetas, maltas, lúpulos y levaduras
+• Documentos indexados
 
-Si deseas utilizar mi ncleo conversacional avanzado, cambia al modo ONLINE en el selector superior de la interfaz (asegrate de haber configurado tu GEMINI_API_KEY).`;
+Si deseas utilizar mi núcleo conversacional avanzado, cambia al modo ONLINE en el selector superior de la interfaz (asegúrate de haber configurado tu GEMINI_API_KEY).`;
 }
 
 export const api = {
@@ -263,6 +262,9 @@ export const api = {
   // BÃšNKER â†’ respuesta local inteligente basada en contexto (modo offline aislado)
   sendCommand: async (command: string, history?: unknown[], context?: unknown): Promise<ChatResponse> => {
     if (getMode() === 'online') {
+      if (!checkApiKey()) {
+        throw new Error('API_KEY_REQUIRED');
+      }
       return post<ChatResponse>(GEMINI_FUNCTION_URL, { command, history, context }, 25000);
     }
     return Promise.resolve({ reply: generateLocalReply(command, context) });
@@ -288,24 +290,26 @@ export const api = {
       }
       return reply;
     }
+    if (!checkApiKey()) {
+      throw new Error('API_KEY_REQUIRED');
+    }
     const customKey = sanitizeHeaderValue(localStorage.getItem('GEMINI_API_KEY') || '');
     const res = await fetch(GEMINI_FUNCTION_URL, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
-        ...(customKey ? { 'x-gemini-api-key': customKey } : {})
+        'x-gemini-api-key': customKey
       },
       body: JSON.stringify({ command, history, context, stream: true }),
     });
 
     if (!res.ok) {
-      const raw = await res.text();
-      let errMsg = raw;
+      let errMsg = '';
       try {
-        const errJson = JSON.parse(raw);
-        errMsg = errJson.error || errJson.message || raw;
+        const errJson = await res.json();
+        errMsg = errJson.error || errJson.message || JSON.stringify(errJson);
       } catch {
-        // raw ya contiene el texto
+        errMsg = await res.text();
       }
       
       logger.error(`Gemini Stream Error`, errMsg);

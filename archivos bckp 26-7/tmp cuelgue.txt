@@ -1,0 +1,40 @@
+Necesito dos cosas en Windows, en este PC (Intel i7-3770K, 16GB RAM DDR3, RTX 2060 6GB VRAM):
+
+1. Revisa los procesos de "NVIDIA Broadcast" que están corriendo actualmente 
+
+   (aparecen varias instancias duplicadas en el Administrador de Tareas / 
+
+   nvidia-smi). Dime cuántas hay, sus PIDs, y si es seguro cerrar las 
+
+   duplicadas sin afectar al micrófono/webcam que estoy usando ahora mismo. 
+
+   No cierres nada todavía, solo dime qué encuentras y qué recomiendas.
+
+2. Quiero medir el consumo de VRAM y rendimiento de Ollama corriendo 
+
+   qwen2.5-coder:3b (cuantización Q4_K_M, la que viene por defecto) mientras 
+
+   trabajo normalmente en VS Code con otras apps abiertas (navegadores, etc.). 
+
+   Ayúdame a:
+
+   a) Ejecutar `ollama pull qwen2.5-coder:3b` si no lo tengo ya.
+
+   b) Dejar corriendo `nvidia-smi -l 1` en una terminal separada para monitorizar 
+
+      la VRAM en tiempo real.
+
+   c) Lanzar el modelo con `ollama run qwen2.5-coder:3b` y pedirle que genere 
+
+      una función de ejemplo en Python, para ver cómo responde.
+
+   d) Anotar: VRAM usada por Ollama en reposo, VRAM usada mientras genera 
+
+      respuesta, y si notas lag o tardanza anormal en la generación.
+
+Quiero los datos concretos (VRAM en MiB, tiempos) para decidir con otra IA 
+
+si este modelo es viable para autocompletado diario en este equipo.
+
+
+--------------------------------------------------------------------------------------
