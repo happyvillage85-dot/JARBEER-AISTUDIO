@@ -27,7 +27,6 @@ import {
   startListening, stopListening, isVoiceRecognitionAvailable,
   speak, cancelSpeech,
 } from './lib/voice';
-import { RegistrosProvider } from './lib/registrosState';
 
 const PV = {
   initial: { opacity:0, y:14, filter:'blur(5px)' },
@@ -75,6 +74,7 @@ export default function App() {
 
   const now = () => new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
 
+  // Construye el contexto de la fábrica para inyectar en Gemini
   const buildFactoryContext = useCallback(() => ({
     mode,
     batches: BATCHES.map(b => ({
@@ -93,6 +93,7 @@ export default function App() {
   const respondTo = useCallback(async (userText: string) => {
     const lower = userText.trim().toLowerCase();
 
+    // Interceptar la respuesta a la pregunta de limpieza del historial
     const lastMsg = msgs[msgs.length - 1];
     const isCleanHistoryPrompt = lastMsg && lastMsg.role === 'assistant' && lastMsg.content.includes('¿Limpiamos el historial de este chat para prevenir alucinaciones?');
 
@@ -141,6 +142,7 @@ export default function App() {
 
     const match = voiceCommands.find(c=>c.triggers.some(t=>lower.includes(t)));
 
+    // Construir historial para Gemini (excluyendo el mensaje actual)
     const history = msgs
       .filter(m => m.role === 'user' || m.role === 'assistant')
       .map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content }))
@@ -179,7 +181,7 @@ export default function App() {
       );
     } catch (err: any) {
       if (err.message === 'API_KEY_REQUIRED') {
-        setMsgs(p => p.slice(0, -1));
+        setMsgs(p => p.slice(0, -1)); // Remove the user message that just got added
         setTyping(false);
         setMic('idle');
         return;
@@ -265,7 +267,7 @@ export default function App() {
   }, [respondTo]);
 
   return (
-    <RegistrosProvider>
+    <>
       {/* Background image — full visibility */}
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <img 
@@ -302,7 +304,12 @@ export default function App() {
                   {screen==='production'    && <Production/>}
                   {screen==='documents'     && <Documents/>}
                   {screen==='fermentadores'  && <Fermentadores/>}
-                  {screen==='recetas'        && <Recetas onNavigate={navigate} onSend={handleSend} />}
+                  {screen==='recetas'        && (
+  <Recetas 
+    onNavigate={navigate} 
+    onSend={handleSend} 
+  />
+)}
                   {screen==='alertas'        && <Alertas/>}
                   {screen==='analisis'       && <Analisis/>}
                   {screen==='logs'           && <Logs/>}
@@ -322,7 +329,12 @@ export default function App() {
                   {screen==='production'    && <Production/>}
                   {screen==='documents'     && <Documents/>}
                   {screen==='fermentadores'  && <Fermentadores/>}
-                  {screen==='recetas'        && <Recetas onNavigate={navigate} onSend={handleSend} />}
+                  {screen==='recetas'        && (
+  <Recetas 
+    onNavigate={navigate} 
+    onSend={handleSend} 
+  />
+)}
                   {screen==='alertas'        && <Alertas/>}
                   {screen==='analisis'       && <Analisis/>}
                   {screen==='logs'           && <Logs/>}
@@ -334,6 +346,6 @@ export default function App() {
           </div>
         </>
       )}
-    </RegistrosProvider>
+    </>
   );
 }
