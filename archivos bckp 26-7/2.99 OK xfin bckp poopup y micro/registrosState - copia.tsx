@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { RegistroProduccion, registrosProduccion } from '../data/plantillasBeer';
+import { RegistroProduccion, ejemploProduccionGoldenAle } from '../data/plantillasBeer';
 
 type ValorCampo = string | number | boolean;
 
@@ -24,7 +24,7 @@ interface RegistrosContextType {
 const RegistrosContext = createContext<RegistrosContextType | undefined>(undefined);
 
 export const RegistrosProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [registros, setRegistros] = useState<RegistroProduccion[]>(registrosProduccion);
+  const [registros, setRegistros] = useState<RegistroProduccion[]>([ejemploProduccionGoldenAle]);
   const [loteActivoId, setLoteActivoId] = useState<string>("26001");
 
   const registroActivo = registros.find((r) => r.lote === loteActivoId) || null;
@@ -104,7 +104,6 @@ export const RegistrosProvider: React.FC<{ children: ReactNode }> = ({ children 
       maceracion: registroActivo.maceracion,
       hervido: registroActivo.hervido,
       levadura: registroActivo.levadura,
-      observacionesProduccion: registroActivo.observacionesProduccion,
     });
   }, [registroActivo]);
 
