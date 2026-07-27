@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Thermometer, Droplets, FlaskConical, Clock, Cpu, X, Activity, Beaker } from 'lucide-react';
 import { ScreenHeader } from '../components/ScreenHeader';
-import { BATCHES } from '../data/mockData';
+import { useRegistros } from '../lib/registrosState';
 
 interface Fermentador {
   id: string;
@@ -16,21 +16,47 @@ interface Fermentador {
   status: 'activo' | 'vacio';
 }
 
-const FERMENTADORES: Fermentador[] = [
-  { id: 'F-01', batch: BATCHES?.[0]?.batch ?? '26-017', recipe: BATCHES?.[0]?.recipe ?? 'Golden Ale', temp: 20.5, plato: 9.2, ph: 5.25, progress: 68, timeLeft: '4d 12h', status: 'activo' },
-  { id: 'F-02', batch: BATCHES?.[1]?.batch ?? '26-018', recipe: BATCHES?.[1]?.recipe ?? 'IPA', temp: 18.0, plato: 12.5, ph: 5.18, progress: 42, timeLeft: '6d 04h', status: 'activo' },
-  { id: 'F-03', batch: '—', recipe: 'Vacío', temp: 0, plato: 0, ph: 0, progress: 0, timeLeft: '—', status: 'vacio' },
-  { id: 'F-04', batch: '26-019', recipe: 'Stout', temp: 22.0, plato: 14.8, ph: 5.30, progress: 85, timeLeft: '2d 08h', status: 'activo' },
-  { id: 'F-05', batch: '—', recipe: 'Vacío', temp: 0, plato: 0, ph: 0, progress: 0, timeLeft: '—', status: 'vacio' },
-  { id: 'F-06', batch: '26-020', recipe: 'Lager', temp: 12.0, plato: 11.2, ph: 5.22, progress: 15, timeLeft: '12d 00h', status: 'activo' },
-];
-
 export function Fermentadores() {
   const [selected, setSelected] = useState<Fermentador | null>(null);
+  const { registrosProduccion } = useRegistros();
+
+  const FERMENTADORES: Fermentador[] = Array.from({ length: 6 }, (_, i) => {
+    const id = `F-0${i + 1}`;
+    const registro = registrosProduccion?.[i];
+
+    if (!registro) {
+      return {
+        id,
+        batch: '—',
+        recipe: 'Vacío',
+        temp: 0,
+        plato: 0,
+        ph: 0,
+        progress: 0,
+        timeLeft: '—',
+        status: 'vacio',
+      };
+    }
+
+    return {
+      id,
+      batch: registro.batch ?? '—',
+      recipe: registro.recipe ?? 'Lote',
+      temp: registro.currentTemp ?? 20.0,
+      plato: registro.plato ?? 10.0,
+      ph: registro.ph ?? 5.2,
+      progress: 50,
+      timeLeft: '4d 00h',
+      status: 'activo',
+    };
+  });
+
+  const activosCount = FERMENTADORES.filter(f => f.status === 'activo').length;
+  const vaciosCount = FERMENTADORES.filter(f => f.status === 'vacio').length;
 
   return (
     <div className="flex min-h-full flex-col pb-32">
-      <ScreenHeader title="Fermentadores" subtitle="6 fermentadores · 4 activos · 2 vacíos" />
+      <ScreenHeader title="Fermentadores" subtitle={`6 fermentadores · ${activosCount} activos · ${vaciosCount} vacíos`} />
       <div className="grid grid-cols-2 gap-2 px-4 sm:grid-cols-3 lg:grid-cols-6">
         {FERMENTADORES.map((f, i) => (
           <FermentadorVista key={f.id} f={f} delay={0.06 + i * 0.04} onClick={() => setSelected(f)} />
@@ -128,11 +154,11 @@ function FermentadorModal({ f, onClose }: { f: Fermentador; onClose: () => void 
             </div>
             <div className="flex justify-between border-b border-zinc-900 pb-1.5">
               <span>Temperatura:</span>
-              <span className="font-bold" style={{ color: hasTempDeviation ? '#FFC107' : '#white' }}>{f.temp}°C</span>
+              <span className="font-bold" style={{ color: hasTempDeviation ? '#FFC107' : '#ffffff' }}>{f.temp}°C</span>
             </div>
             <div className="flex justify-between border-b border-zinc-900 pb-1.5">
               <span>Parámetro pH:</span>
-              <span className="font-bold" style={{ color: hasPhDeviation ? '#FFC107' : '#white' }}>{f.ph.toFixed(2)}</span>
+              <span className="font-bold" style={{ color: hasPhDeviation ? '#FFC107' : '#ffffff' }}>{f.ph.toFixed(2)}</span>
             </div>
             <div className="flex justify-between border-b border-zinc-900 pb-1.5">
               <span>Rendimiento:</span>
@@ -148,5 +174,3 @@ function FermentadorModal({ f, onClose }: { f: Fermentador; onClose: () => void 
     </div>
   );
 }
-
-function RealtimeDashboard() { return null; }

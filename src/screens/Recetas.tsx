@@ -1,136 +1,104 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, Clock, Droplets, Thermometer, ChevronRight } from 'lucide-react';
+import { BookOpen, Award, CheckCircle2 } from 'lucide-react';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { GlassCard } from '../components/GlassCard';
-import { BATCHES, type Screen } from '../data/mockData';
+import { useRegistros } from '../lib/registrosState';
 
-const RECETAS = BATCHES.map((b, i) => ({
-  id: `R-${String(i + 1).padStart(2, '0')}`,
-  name: b.recipe,
-  batch: b.batch,
-  plato: b.plato,
-  ph: b.ph,
-  temp: b.currentTemp,
-  og: b.og,
-  fg: b.fg,
-  abv: b.abv,
-  ibu: b.ibu,
-  ebc: b.ebc,
-  stage: b.stage,
-}));
+export function Recetas() {
+  const { registrosProduccion } = useRegistros();
 
-interface RecetasProps {
-  onNavigate: (s: Screen) => void;
-  onSend: (text: string) => void;
-}
+  const recipesMap = new Map();
+  registrosProduccion.forEach(batch => {
+    if (!recipesMap.has(batch.recipe)) {
+      recipesMap.set(batch.recipe, {
+        recipe: batch.recipe,
+        batches: [batch.batch],
+        brewer: batch.brewer,
+        stage: batch.stage
+      });
+    } else {
+      recipesMap.get(batch.recipe).batches.push(batch.batch);
+    }
+  });
 
-export function Recetas({ onNavigate, onSend }: RecetasProps) {
+  const recipesList = Array.from(recipesMap.values());
+  const [selectedRecipe, setSelectedRecipe] = useState(recipesList[0]?.recipe || 'Golden Ale');
+
+  const activeRecipeData = recipesList.find(r => r.recipe === selectedRecipe) || recipesList[0];
+
   return (
-    <div className="flex min-h-full flex-col pb-32">
+    <div className="flex min-h-full flex-col pb-32 px-4 space-y-6">
       <ScreenHeader
-        title="Recetas"
-        subtitle={`${RECETAS.length} recetas disponibles`}
+        title="Recetario y Estilos"
+        subtitle="Recetas vinculadas a los lotes activos en RegistrosProvider"
       />
 
-      <div className="space-y-3 px-4">
-        {RECETAS.map((r, i) => (
-          <motion.div
-            key={r.id}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.06 + i * 0.06 }}
-          >
-            <GlassCard
-              className="p-4"
-              corners
-              delay={0.06 + i * 0.06}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="flex h-10 w-10 items-center justify-center rounded-xl"
-                    style={{
-                      background: 'rgba(255,170,0,0.08)',
-                      border: '1px solid rgba(255,170,0,0.22)',
-                      color: '#FFAA00',
-                    }}
-                  >
-                    <BookOpen size={16} />
-                  </div>
-
-                  <div>
-                    <p className="font-display text-sm font-bold text-white">
-                      {r.name}
-                    </p>
-
-                    <p
-                      className="font-mono text-[10px]"
-                      style={{ color: 'rgba(74,96,112,0.7)' }}
-                    >
-                      {r.id} · Lote {r.batch} · {r.stage}
-                    </p>
-                  </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="space-y-3">
+          <p className="font-mono text-[10px] uppercase tracking-wider text-gray-400 px-1">Recetas Disponibles:</p>
+          {recipesList.map((rec) => {
+            const isSelected = rec.recipe === selectedRecipe;
+            return (
+              <button
+                key={rec.recipe}
+                onClick={() => setSelectedRecipe(rec.recipe)}
+                className={`w-full text-left p-4 rounded-2xl transition-all cursor-pointer border ${
+                  isSelected
+                    ? 'bg-[#00e1ff]/15 border-[#00e1ff]/40 shadow-[0_0_15px_rgba(0,225,255,0.15)] text-white'
+                    : 'bg-slate-900/40 border-white/5 text-gray-400 hover:text-white hover:bg-slate-900/80'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-display text-sm font-bold text-white">{rec.recipe}</span>
+                  <BookOpen size={14} className={isSelected ? 'text-[#00e1ff]' : 'text-gray-500'} />
                 </div>
+                <p className="font-mono text-[10px] text-gray-400">
+                  Lotes vinculados: {rec.batches.join(', ')}
+                </p>
+              </button>
+            );
+          })}
+        </div>
 
-                <ChevronRight
-                  size={16}
-                  style={{ color: 'rgba(74,96,112,0.4)' }}
-                />
+        <div className="md:col-span-2">
+          {activeRecipeData && (
+            <GlassCard className="p-6 space-y-6" corners delay={0.05}>
+              <div className="border-b border-white/10 pb-4">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-[#00e1ff] bg-[#00e1ff]/10 px-2.5 py-1 rounded-full border border-[#00e1ff]/20">
+                  Estilo Registrado
+                </span>
+                <h2 className="font-display text-2xl font-bold text-white mt-2">
+                  {activeRecipeData.recipe}
+                </h2>
+                <p className="font-mono text-xs text-gray-400 mt-1">
+                  Creado por / Maestro Cervecero: {activeRecipeData.brewer}
+                </p>
               </div>
 
-              <div className="mt-3 grid grid-cols-4 gap-2">
-                <Mini label="°Plato" value={`${r.plato}°P`} />
-                <Mini label="pH" value={r.ph.toFixed(2)} />
-                <Mini label="ABV" value={`${r.abv}%`} />
-                <Mini label="IBU" value={String(r.ibu)} />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 rounded-2xl bg-slate-950/60 border border-white/5">
+                  <p className="font-mono text-[10px] text-gray-400 uppercase">Estado Actual</p>
+                  <p className="font-display text-base font-bold text-[#FFD060] mt-1">{activeRecipeData.stage}</p>
+                </div>
+                <div className="p-4 rounded-2xl bg-slate-950/60 border border-white/5">
+                  <p className="font-mono text-[10px] text-gray-400 uppercase">Lotes Activos</p>
+                  <p className="font-display text-base font-bold text-[#00e1ff] mt-1">{activeRecipeData.batches.join(', ')}</p>
+                </div>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-zinc-800/50 flex justify-end">
-                <button
-                  onClick={() => {
-                    onSend(
-                      `Empezar nuevo lote usando la receta base de ${r.name}`
-                    );
-                    onNavigate('assistant');
-                  }}
-                  className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider transition-all duration-200"
-                  style={{
-                    background: 'rgba(255,170,0,0.06)',
-                    border: '1px solid rgba(255,170,0,0.18)',
-                    color: '#FFAA00',
-                  }}
-                >
-                  <ChevronRight size={10} />
-                  Usar como base
-                </button>
+              <div className="p-4 rounded-2xl bg-[#00e1ff]/5 border border-[#00e1ff]/20 space-y-2">
+                <p className="font-mono text-[10px] uppercase tracking-wider text-[#00e1ff] font-bold">
+                  Nota de Calidad J.A.R.B.E.E.R.
+                </p>
+                <p className="font-sans text-xs text-gray-300 leading-relaxed">
+                  La receta de <span className="text-white font-bold">{activeRecipeData.recipe}</span> mantiene los parámetros estandarizados de fermentación y perfil de maltas definidos en el sistema global.
+                </p>
               </div>
             </GlassCard>
-          </motion.div>
-        ))}
+          )}
+        </div>
       </div>
-    </div>
-  );
-}
-
-function Mini({ label, value }: { label: string; value: string }) {
-  return (
-    <div
-      className="rounded-lg p-2 text-center"
-      style={{
-        background: 'rgba(255,255,255,0.025)',
-        border: '1px solid rgba(255,255,255,0.06)',
-      }}
-    >
-      <p
-        className="font-mono text-[8px] uppercase tracking-wider"
-        style={{ color: 'rgba(74,96,112,0.6)' }}
-      >
-        {label}
-      </p>
-
-      <p className="font-display text-sm font-bold text-white">
-        {value}
-      </p>
     </div>
   );
 }
