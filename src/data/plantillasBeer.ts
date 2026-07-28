@@ -23,67 +23,61 @@ export interface FermentationHistory {
 
 export const INITIAL_PRODUCCION_RECORDS: BatchRecord[] = [
   {
+    id: '26002',
+    batch: '26002',
+    recipe: 'Blonde Ale',
+    brewer: 'JuanFran',
+    volume: 1150,
+    stage: 'Finalizado',
+    fermentadorNum: 'F1',
+    currentTemp: '2',
+    plato: '3.30',
+    ph: '4.28',
+    observations: 'Densidad Original: 13.20 ºP. Densidad Final: 3.30 ºP. ABV: 5.5%. IBU: 28. EBC: 13.5. Lote finalizado, temperatura actual 2 ºC.'
+  },
+  {
     id: '26001',
     batch: '26001',
     recipe: 'Golden Ale',
     brewer: 'JuanFran',
-    volume: 500,
-    stage: 'Fermentación Principal',
-    fermentadorNum: 'F1',
-    currentTemp: '18.7',
-    plato: '12.3',
-    ph: '4.32',
-    observations: 'Lote 26001 con historial completo de controles de temperatura, pH, grados Plato y purgas[cite: 1].'
-  },
-  {
-    id: '26002',
-    batch: '26002',
-    recipe: 'Blonde',
-    brewer: 'JuanFran',
-    volume: 500,
-    stage: 'Maduración',
+    volume: 1200,
+    stage: 'En proceso de envasado',
     fermentadorNum: 'F2',
-    currentTemp: '17.8',
-    plato: '12.1',
-    ph: '4.28',
-    observations: 'Ficha configurada para actualización dinámica desde la aplicación[cite: 1].'
+    currentTemp: '18.7',
+    plato: '1.60',
+    ph: '4.32',
+    observations: 'Densidad Original: 9.20 ºP. Densidad Final: 1.60 ºP. ABV: 4.2%. IBU: 18. EBC: 7.5. Lote en proceso de envasado.'
   },
   {
     id: 'L26003',
     batch: 'L26003',
     recipe: 'Red Ale',
     brewer: 'JuanFran',
-    volume: 500,
-    stage: 'Fermentación',
+    volume: 1100,
+    stage: 'Trasegado',
     fermentadorNum: 'F3',
     currentTemp: '18.7',
-    plato: '12.5',
+    plato: '2.50',
     ph: '4.35',
-    observations: 'Ficha configurada para actualización dinámica desde la aplicación[cite: 1].'
+    observations: 'Densidad Original: 10.50 ºP. Densidad Final: 2.50 ºP. ABV: 4.4%. IBU: 22. EBC: 28.0. Lote en trasegado.'
   },
   {
     id: 'L26004',
     batch: 'L26004',
     recipe: 'Golden Ale',
     brewer: 'JuanFran',
-    volume: 500,
+    volume: 1050,
     stage: 'Secundaria',
     fermentadorNum: 'F4',
-    currentTemp: '18.1',
-    plato: '11.8',
+    currentTemp: '1.5',
+    plato: '3.00',
     ph: '4.31',
-    observations: 'Ficha configurada para actualización dinámica desde la aplicación[cite: 1].'
+    observations: 'Densidad Original: 10.50 ºP. Densidad Final: 3.00 ºP. ABV: 4.2%. IBU: 20. EBC: 7.0. Lote con temperatura actual 1.5 ºC.'
   }
 ];
 
 export const INITIAL_FERMENTATION_HISTORY: Record<string, FermentationHistory> = {
-  '26001': {
-    lecturas: [
-      { fecha: 'Día 1', plato: 14.5, temp: 19.0, ph: 5.2 },
-      { fecha: 'Día 3', plato: 13.2, temp: 18.8, ph: 4.5 },
-      { fecha: 'Día 5', plato: 12.3, temp: 18.7, ph: 4.32 }
-    ]
-  },
+  '26001': { lecturas: [] },
   '26002': { lecturas: [] },
   'L26003': { lecturas: [] },
   'L26004': { lecturas: [] }
