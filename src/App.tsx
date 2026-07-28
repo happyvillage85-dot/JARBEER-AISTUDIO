@@ -17,7 +17,7 @@ import { Analisis } from './screens/Analisis';
 import { Logs } from './screens/Logs';
 import { DiagnosticConsole } from './components/DiagnosticConsole';
 import type { Screen, ChatMessage } from './data/mockData';
-import { initialChat, voiceCommands, BATCHES, documents } from './data/mockData';
+import { initialChat, voiceCommands } from './data/mockData';
 import type { MicState } from './components/MicButton';
 import { playSound } from './lib/sound';
 import { haptics } from './lib/haptics';
@@ -27,7 +27,7 @@ import {
   startListening, stopListening, isVoiceRecognitionAvailable,
   speak, cancelSpeech,
 } from './lib/voice';
-import { RegistrosProvider } from './lib/registrosState';
+import { RegistrosProvider, useRegistros } from './lib/registrosState';
 
 const PV = {
   initial: { opacity:0, y:14, filter:'blur(5px)' },
@@ -36,7 +36,8 @@ const PV = {
 };
 const PT = { duration:0.37, ease:[0.22,1,0.36,1] as [number,number,number,number] };
 
-export default function App() {
+function AppContent() {
+  const { registrosProduccion, registrosFermentacion } = useRegistros();
   const [booted, setBooted]   = useState(false);
   const [screen, setScreen]   = useState<Screen>('home');
   const [mic, setMic]         = useState<MicState>('idle');
@@ -59,6 +60,13 @@ export default function App() {
     localStorage.setItem('jarbeer-voice', selectedVoice);
   }, [selectedVoice]);
 
+  useEffect(() => {
+    return () => {
+      stopListening();
+      setMic('idle');
+    };
+  }, []);
+
   const clearTimers = () => { timers.current.forEach(clearTimeout); timers.current=[]; };
 
   const toggleMode = useCallback(() => {
@@ -77,18 +85,17 @@ export default function App() {
 
   const buildFactoryContext = useCallback(() => ({
     mode,
-    batches: BATCHES.map(b => ({
-      batch: b.batch, recipe: b.recipe, stage: b.stage, stageProgress: b.stageProgress,
-      fermentadorNum: b.fermentadorNum, currentTemp: b.currentTemp, plato: b.plato, ph: b.ph,
+    batches: registrosProduccion.map(b => ({
+      batch: b.batch,
+      recipe: b.recipe,
+      stage: b.stage,
+      fermentadorNum: b.fermentadorNum,
+      currentTemp: b.currentTemp,
+      plato: b.plato,
+      ph: b.ph,
     })),
-    fermentadores: [
-      { id: 'F-01', recipe: BATCHES[0]?.recipe, temp: 20.5, plato: 9.2, ph: 5.25, progress: 68, timeLeft: '4d 12h' },
-      { id: 'F-02', recipe: BATCHES[1]?.recipe, temp: 18.0, plato: 12.5, ph: 5.18, progress: 42, timeLeft: '6d 04h' },
-      { id: 'F-04', recipe: 'Stout', temp: 22.0, plato: 14.8, ph: 5.30, progress: 85, timeLeft: '2d 08h' },
-      { id: 'F-06', recipe: 'Lager', temp: 12.0, plato: 11.2, ph: 5.22, progress: 15, timeLeft: '12d 00h' },
-    ],
-    documents: documents.map(d => ({ title: d.title, reference: d.reference, category: d.category })),
-  }), [mode]);
+    fermentacion: registrosFermentacion,
+  }), [mode, registrosProduccion, registrosFermentacion]);
 
   const respondTo = useCallback(async (userText: string) => {
     const lower = userText.trim().toLowerCase();
@@ -251,6 +258,7 @@ export default function App() {
       },
       (_error) => {
         resuelto = true;
+        stopListening();
         setMic('idle');
         haptics.error();
       },
@@ -265,7 +273,7 @@ export default function App() {
   }, [respondTo]);
 
   return (
-    <RegistrosProvider>
+    <>
       {/* Background image — full visibility */}
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <img 
@@ -334,6 +342,14 @@ export default function App() {
           </div>
         </>
       )}
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <RegistrosProvider>
+      <AppContent />
     </RegistrosProvider>
   );
 }

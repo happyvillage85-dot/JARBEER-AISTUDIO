@@ -80,6 +80,8 @@ export function startListening(
       };
       rec.onerror = (event: any) => {
         starting = false;
+        activeRecognition = null;
+        try { rec.abort(); } catch { /* noop */ }
         onError(event?.error ?? 'unknown');
       };
       rec.onend = () => {
