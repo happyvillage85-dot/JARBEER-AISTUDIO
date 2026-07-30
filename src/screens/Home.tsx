@@ -1,23 +1,46 @@
 import { useState } from 'react';
 import { useRegistros } from '../lib/registrosState';
-import { Thermometer, Activity, Clock, ArrowRight } from 'lucide-react';
 
 export function Home() {
   const { registrosProduccion } = useRegistros();
   const [selectedTankIndex, setSelectedTankIndex] = useState(0);
 
   // Tanques F1 al F6 mapeados dinámicamente con los registros
-  const tanks = ['F1', 'F2', 'F3', 'F4', 'F5', 'F6'].map((tankNum, idx) => {
-    const batch = registrosProduccion[idx % registrosProduccion.length];
+  const batchesByTank = new Map(registrosProduccion.map((batch) => [batch.fermentadorNum, batch]));
+  const tanks = ['F1', 'F2', 'F3', 'F4', 'F5', 'F6'].map((tankNum) => {
+    const batch = batchesByTank.get(tankNum);
+    const isEmpty = !batch;
+    const color = isEmpty
+      ? tankNum === 'F5'
+        ? '#f97316'
+        : tankNum === 'F6'
+          ? '#34d399'
+          : '#ffffff'
+      : '#00e1ff';
+
+    const progress = batch
+      ? batch.stage === 'Finalizado'
+        ? 100
+        : batch.stage === 'En proceso de envasado'
+          ? 92
+          : batch.stage === 'Trasegado'
+            ? 84
+            : batch.stage === 'Secundaria'
+              ? 68
+              : 50
+      : 0;
+
     return {
       id: tankNum,
       name: `Tanque ${tankNum}`,
-      recipe: batch ? batch.recipe : 'Golden Ale',
-      batchId: batch ? batch.batch : '26001',
-      temp: batch ? batch.currentTemp : '18.5',
-      plato: batch ? batch.plato : '12.0',
-      ph: batch ? batch.ph : '4.30',
-      progress: 92
+      recipe: batch ? batch.recipe : 'Vacío',
+      batchId: batch ? batch.batch : '—',
+      temp: batch ? batch.currentTemp : '—',
+      abv: batch ? batch.abv : '—',
+      ph: batch ? batch.ph : '—',
+      isEmpty,
+      color,
+      progress,
     };
   });
 
@@ -42,26 +65,27 @@ export function Home() {
               <button
                 key={tank.id}
                 onClick={() => setSelectedTankIndex(idx)}
-                className={`flex flex-col items-start p-3 rounded-2xl backdrop-blur-md transition-all cursor-pointer text-left border ${
-                  isSelected
-                    ? 'bg-[#00e1ff]/20 border-[#00e1ff] shadow-[0_0_20px_rgba(0,225,255,0.3)]'
-                    : 'bg-slate-950/60 border-white/10 hover:border-white/30'
-                }`}
+                className="flex flex-col items-start p-3 rounded-2xl backdrop-blur-md transition-all cursor-pointer text-left border"
+                style={{
+                  borderColor: isSelected ? '#00e1ff' : tank.color,
+                  boxShadow: isSelected ? `0 0 20px ${tank.color}33` : undefined,
+                  background: isSelected ? 'rgba(0,225,255,0.14)' : undefined,
+                }}
               >
-                <span className="font-display text-sm font-bold text-[#00e1ff] mb-2">{tank.id}</span>
+                <span className="font-display text-sm font-bold mb-2" style={{ color: tank.isEmpty ? tank.color : '#00e1ff' }}>{tank.id}</span>
                 <div className="space-y-1 font-mono text-[10px] text-gray-300 w-full">
-                  <div className="flex items-center gap-1">
-                    <Thermometer size={10} className="text-[#FFAA00]" />
-                    <span>{tank.temp}°C</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Activity size={10} className="text-[#FFD060]" />
-                    <span>{tank.plato}°P</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Clock size={10} className="text-[#00e1ff]" />
-                    <span>{tank.ph} pH</span>
-                  </div>
+                  {tank.isEmpty ? (
+                    <div className="text-[12px] font-semibold uppercase tracking-[0.22em]" style={{ color: tank.color }}>
+                      Ready
+                    </div>
+                  ) : (
+                    <div className="space-y-2 text-center">
+                      <div className="text-[11px] uppercase tracking-[0.18em] text-[#00e1ff]">Temperatura</div>
+                      <div className="text-lg font-bold text-[#00e1ff]">{tank.temp}°C</div>
+                      <div className="text-[11px] uppercase tracking-[0.18em] text-[#00e1ff]">ABV</div>
+                      <div className="text-lg font-bold text-[#00e1ff]">{tank.abv}%</div>
+                    </div>
+                  )}
                 </div>
               </button>
             );

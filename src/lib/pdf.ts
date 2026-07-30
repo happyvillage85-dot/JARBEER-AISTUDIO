@@ -234,3 +234,85 @@ export function generateProductionPdfHtml(
 </body>
 </html>`;
 }
+
+export function generateFermentationHistoryHtml(
+  data: ProductionFields,
+  history: { lecturas: Array<{ fecha: string; plato: number; temp: number; ph: number }> }
+): string {
+  const lecturasRows = history.lecturas
+    .map(
+      (lectura) => `<tr><td>${esc(lectura.fecha)}</td><td class="c">${esc(lectura.plato.toFixed(2))}</td><td class="c">${esc(lectura.temp.toFixed(1))}</td><td class="c">${esc(lectura.ph.toFixed(2))}</td></tr>`
+    )
+    .join('');
+
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Hoja de Fermentación — ${esc(data.batch)}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Georgia', 'Times New Roman', serif; color: #1a1410; padding: 22px 30px; max-width: 780px; margin: 0 auto; background:#f4efe6; }
+  .sheet { background:#fdfbf7; border: 1.5px solid #2a1f14; }
+  header { background: linear-gradient(180deg, #3d2b1c, #2a1f14); color: #f4efe6; text-align:center; padding: 14px 10px 12px; }
+  header h1 { font-size: 19px; letter-spacing: 3px; font-weight:700; }
+  header .sub { font-size: 10px; letter-spacing: 4px; margin-top: 3px; opacity:0.85; }
+  .top-fields { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-bottom: 1.5px solid #2a1f14; }
+  .top-fields > div { padding: 7px 12px; font-size: 11px; border-right: 1px solid #c9bfae; }
+  .top-fields > div:last-child { border-right:none; }
+  .top-fields .lbl { font-size: 9px; text-transform:uppercase; letter-spacing:1px; color:#6b5c47; display:block; }
+  .top-fields .val { font-size: 13px; font-weight:700; color:#2a1f14; }
+  .summary { display:flex; gap:10px; padding: 11px 12px; }
+  .summary .item { flex:1; border:1px solid #c9bfae; padding:8px 10px; background:#f4efe6; }
+  .summary .lbl { display:block; font-size:9px; text-transform:uppercase; letter-spacing:0.5px; color:#6b5c47; margin-bottom:4px; }
+  .summary .val { font-size:12px; font-weight:700; color:#2a1f14; }
+  .section { padding: 10px 12px; border-bottom: 1.5px solid #2a1f14; }
+  .section-title { background:#2a1f14; color:#f4efe6; font-size:10.5px; font-weight:700; letter-spacing:1.5px; padding:6px 10px; text-transform:uppercase; }
+  table { width:100%; border-collapse: collapse; margin-top:8px; font-size:10.5px; }
+  th, td { padding:8px 10px; border:1px solid #c9bfae; }
+  th { background:#e8ddc9; text-transform:uppercase; letter-spacing:0.5px; font-size:9px; text-align:left; }
+  td.c { text-align:center; }
+  .note { margin-top:10px; font-size:11px; color:#6b5c47; }
+  footer { text-align:center; padding:8px; font-size:8.5px; color:#8a7c66; }
+  @media print { body { padding:0; background:#fff; } .sheet{ border:none; } }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <header>
+    <h1>HOJA DE FERMENTACIÓN</h1>
+    <div class="sub">J.A.R.B.E.E.R.</div>
+  </header>
+  <div class="top-fields">
+    <div><span class="lbl">Cerveza</span><span class="val">${esc(data.recipe)}</span></div>
+    <div><span class="lbl">Fermentador</span><span class="val">${esc(data.fermentadorNum)}</span></div>
+    <div><span class="lbl">Lote</span><span class="val">${esc(data.batch)}</span></div>
+    <div><span class="lbl">Maestro cervecero</span><span class="val">${esc(data.brewer)}</span></div>
+  </div>
+  <div class="summary">
+    <div class="item"><span class="lbl">Volumen</span><span class="val">${esc(data.volume)} L</span></div>
+    <div class="item"><span class="lbl">ABV estimado</span><span class="val">${esc(data.alcohol)}%</span></div>
+    <div class="item"><span class="lbl">pH actual</span><span class="val">${esc(data.phFinal ?? '—')}</span></div>
+  </div>
+  <div class="section">
+    <div class="section-title">Lecturas de fermentación</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th class="c">°Plato</th>
+          <th class="c">Temp (°C)</th>
+          <th class="c">pH</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${lecturasRows || '<tr><td colspan="4" style="text-align:center;padding:16px 0;">No hay registros de lectura disponibles.</td></tr>'}
+      </tbody>
+    </table>
+    <p class="note">Estos datos corresponden al seguimiento de fermentación para el lote indicado. Imprime o guarda como PDF para registro interno.</p>
+  </div>
+  <footer>Generado por J.A.R.B.E.E.R. OS · Documento de fermentación · ${new Date().toLocaleString('es-ES')}</footer>
+</div>
+</body>
+</html>`;
+}
