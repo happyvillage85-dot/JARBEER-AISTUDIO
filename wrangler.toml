@@ -1,6 +1,6 @@
 # wrangler.toml
 name = 'labirradegabi'
-name = "jarbeer-gemini-worker"
+
 main = "worker/gemini-worker.ts"
 compatibility_date = "2026-07-01"
 
