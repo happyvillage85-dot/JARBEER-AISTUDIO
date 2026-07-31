@@ -1,25 +1,22 @@
 import { useState } from 'react';
 import { useRegistros } from '../lib/registrosState';
 
-// Posiciones aproximadas de los 6 tanques sobre fondo_pc.png (en %).
-// Ajusta top/left mirando la imagen en pantalla hasta que encajen.
-const TANK_POSITIONS: Record<string, { top: string; left: string }> = {
-  F1: { top: '28%', left: '5%' },
-  F2: { top: '28%', left: '18%' },
-  F3: { top: '28%', left: '31%' },
-  F4: { top: '30%', left: '43%' },
-  F5: { top: '32%', left: '55%' },
-  F6: { top: '32%', left: '67%' },
-};
-
 export function Home() {
   const { registrosProduccion } = useRegistros();
   const [selectedTankIndex, setSelectedTankIndex] = useState(0);
 
+  // Tanques F1 al F6 mapeados dinámicamente con los registros
   const batchesByTank = new Map(registrosProduccion.map((batch) => [batch.fermentadorNum, batch]));
   const tanks = ['F1', 'F2', 'F3', 'F4', 'F5', 'F6'].map((tankNum) => {
     const batch = batchesByTank.get(tankNum);
     const isEmpty = !batch;
+    const color = isEmpty
+      ? tankNum === 'F5'
+        ? '#f97316'
+        : tankNum === 'F6'
+          ? '#34d399'
+          : '#ffffff'
+      : '#00e1ff';
 
     const progress = batch
       ? batch.stage === 'Finalizado'
@@ -42,6 +39,7 @@ export function Home() {
       abv: batch ? batch.abv : '—',
       ph: batch ? batch.ph : '—',
       isEmpty,
+      color,
       progress,
     };
   });
@@ -51,53 +49,51 @@ export function Home() {
   return (
     <div className="relative min-h-[calc(100vh-4rem)] w-full overflow-hidden pb-24">
       {/* Imagen de fondo de la fábrica */}
-      <div
+      <div 
         className="absolute inset-0 z-0 bg-cover bg-center pointer-events-none select-none"
         style={{ backgroundImage: `url('/fondo_pc.png')` }}
       />
 
-      {/* Overlay de tanques posicionado sobre la imagen */}
-      <div className="absolute inset-0 z-10">
-        {tanks.map((tank, idx) => {
-          const isSelected = selectedTankIndex === idx;
-          const pos = TANK_POSITIONS[tank.id];
-          const color = tank.isEmpty ? '#ff9900' : '#00ff66';
-
-          return (
-            <button
-              key={tank.id}
-              onClick={() => setSelectedTankIndex(idx)}
-              className="absolute flex flex-col items-center justify-center rounded-xl backdrop-blur-md transition-all cursor-pointer border px-3 py-2"
-              style={{
-                top: pos.top,
-                left: pos.left,
-                borderColor: color,
-                color,
-                background: `rgba(0,0,0,0.35)`,
-                boxShadow: isSelected
-                  ? `0 0 20px ${color}, inset 0 0 10px ${color}66`
-                  : `0 0 10px ${color}66`,
-              }}
-            >
-              <span className="font-display text-xs font-bold tracking-widest">{tank.id}</span>
-              {tank.isEmpty ? (
-                <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.2em]">
-                  Disponible
-                </span>
-              ) : (
-                <div className="mt-1 space-y-0.5 text-center font-mono">
-                  <div className="text-sm font-bold">{tank.temp}°C</div>
-                  <div className="text-[10px] opacity-80">ABV {tank.abv}%</div>
+      {/* Contenedor principal de la interfaz superpuesta */}
+      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 h-full items-start">
+        
+        {/* ZONA IZQUIERDA / CENTRAL: Botones interactivos sobre los Tanques F1 - F6 */}
+        <div className="lg:col-span-7 grid grid-cols-3 md:grid-cols-6 gap-3 pt-12">
+          {tanks.map((tank, idx) => {
+            const isSelected = selectedTankIndex === idx;
+            return (
+              <button
+                key={tank.id}
+                onClick={() => setSelectedTankIndex(idx)}
+                className="flex flex-col items-start p-3 rounded-2xl backdrop-blur-md transition-all cursor-pointer text-left border"
+                style={{
+                  borderColor: isSelected ? '#00e1ff' : tank.color,
+                  boxShadow: isSelected ? `0 0 20px ${tank.color}33` : undefined,
+                  background: isSelected ? 'rgba(0,225,255,0.14)' : undefined,
+                }}
+              >
+                <span className="font-display text-sm font-bold mb-2" style={{ color: tank.isEmpty ? tank.color : '#00e1ff' }}>{tank.id}</span>
+                <div className="space-y-1 font-mono text-[10px] text-gray-300 w-full">
+                  {tank.isEmpty ? (
+                    <div className="text-[12px] font-semibold uppercase tracking-[0.22em]" style={{ color: tank.color }}>
+                      Ready
+                    </div>
+                  ) : (
+                    <div className="space-y-2 text-center">
+                      <div className="text-[11px] uppercase tracking-[0.18em] text-[#00e1ff]">Temperatura</div>
+                      <div className="text-lg font-bold text-[#00e1ff]">{tank.temp}°C</div>
+                      <div className="text-[11px] uppercase tracking-[0.18em] text-[#00e1ff]">ABV</div>
+                      <div className="text-lg font-bold text-[#00e1ff]">{tank.abv}%</div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </button>
-          );
-        })}
-      </div>
+              </button>
+            );
+          })}
+        </div>
 
-      {/* Panel de detalle (mismo panel que ya existía) */}
-      <div className="relative z-20 grid grid-cols-1 gap-6 p-6 h-full items-start pt-[26rem] lg:pt-6 lg:pl-[52%]">
-        <div className="bg-slate-950/80 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl max-w-md">
+        {/* ZONA DERECHA: Panel Detalle (TQ-03 / Panel Dinámico) */}
+        <div className="lg:col-span-5 bg-slate-950/80 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
           <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-4">
             <div>
               <span className="font-mono text-[10px] uppercase tracking-wider text-[#00e1ff] bg-[#00e1ff]/10 px-2.5 py-1 rounded-full border border-[#00e1ff]/20">
@@ -113,14 +109,15 @@ export function Home() {
             </div>
           </div>
 
+          {/* Métricas del Panel */}
           <div className="grid grid-cols-3 gap-3 mb-6">
             <div className="p-3 rounded-2xl bg-slate-900/60 border border-white/5 text-center">
               <p className="font-mono text-[9px] text-gray-400 uppercase">Temperatura</p>
               <p className="font-display text-lg font-bold text-[#FFAA00] mt-1">{activeTank.temp}°C</p>
             </div>
             <div className="p-3 rounded-2xl bg-slate-900/60 border border-white/5 text-center">
-              <p className="font-mono text-[9px] text-gray-400 uppercase">°Plato</p>
-              <p className="font-display text-lg font-bold text-[#FFD060] mt-1">{tanks[selectedTankIndex].isEmpty ? '—' : registrosProduccion.find(r => r.fermentadorNum === activeTank.id)?.plato}</p>
+              <p className="font-mono text-[9px] text-gray-400 uppercase">Densidad (SG)</p>
+              <p className="font-display text-lg font-bold text-[#FFD060] mt-1">1.048</p>
             </div>
             <div className="p-3 rounded-2xl bg-slate-900/60 border border-white/5 text-center">
               <p className="font-mono text-[9px] text-gray-400 uppercase">pH Actual</p>
@@ -128,17 +125,17 @@ export function Home() {
             </div>
           </div>
 
+          {/* Recomendación de la IA */}
           <div className="p-4 rounded-2xl bg-[#00e1ff]/5 border border-[#00e1ff]/20 space-y-2">
             <p className="font-mono text-[10px] uppercase tracking-wider text-[#00e1ff] font-bold">
               Recomendación de J.A.R.B.E.E.R.
             </p>
             <p className="font-sans text-xs text-gray-300 leading-relaxed">
-              {activeTank.isEmpty
-                ? 'Tanque disponible para un nuevo lote.'
-                : <>Mantener la temperatura actual. Vigilar pH del lote <span className="text-white font-bold">{activeTank.batchId}</span> durante las próximas 24h.</>}
+              Mantener la temperatura actual. La densidad está en el rango óptimo. Vigilar pH del lote <span className="text-white font-bold">{activeTank.batchId}</span> durante las próximas 24h.
             </p>
           </div>
         </div>
+
       </div>
     </div>
   );
