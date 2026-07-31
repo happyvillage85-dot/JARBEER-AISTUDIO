@@ -38,9 +38,6 @@ const MIC_TO_ESTADO: Record<MicState, 'idle' | 'escuchando' | 'pensando' | 'habl
 export function Home({ micState, onMic, onNavigate }: HomeProps) {
   const { registrosProduccion } = useRegistros();
   const [selectedTankId, setSelectedTankId] = useState<string | null>(null);
-  const userName = (() => {
-    try { return localStorage.getItem('jarbeer_user') ?? 'Socio'; } catch { return 'Socio'; }
-  })();
 
   const batchesByTank = new Map(registrosProduccion.map((batch) => [batch.fermentadorNum, batch]));
   const selectedLote = selectedTankId ? batchesByTank.get(selectedTankId) ?? null : null;
@@ -60,17 +57,6 @@ export function Home({ micState, onMic, onNavigate }: HomeProps) {
             onClick={() => setSelectedTankId(tankId)}
           />
         ))}
-      </div>
-
-      {/* Saludo dinámico con el nombre real del usuario, sobre la tablet de la imagen */}
-      <div
-        className="absolute z-10 flex flex-col font-display"
-        style={{ bottom: '11%', left: '5%', maxWidth: '260px' }}
-      >
-        <span className="text-xl font-bold" style={{ color: '#FFAA00', textShadow: '0 0 12px rgba(255,170,0,0.5)' }}>
-          Bienvenido, {userName}.
-        </span>
-        <span className="mt-1 text-sm text-gray-300">¿En qué puedo ayudarte?</span>
       </div>
 
       {/* Panel de detalle del tanque seleccionado */}

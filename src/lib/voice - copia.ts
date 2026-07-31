@@ -1,6 +1,6 @@
-// ─────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────
 // Voz — reconocimiento real (Web Speech API) y síntesis cinematográfica
-// ─────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────
 
 export type SpeechRecognitionResultHandler = (transcript: string, isFinal: boolean) => void;
 export type SpeechRecognitionErrorHandler = (error: string) => void;
@@ -30,6 +30,12 @@ export function isVoiceRecognitionAvailable(): boolean {
 let activeRecognition: MinimalSpeechRecognition | null = null;
 let starting = false;
 
+/**
+ * Detiene y descarta por completo cualquier instancia de reconocimiento
+ * previa. Es clave llamarlo ANTES de crear una nueva instancia: reusar o
+ * solapar instancias es lo que provoca que el micrófono deje de responder
+ * a partir del segundo uso en Chrome.
+ */
 function hardReset(): void {
   if (activeRecognition) {
     try { activeRecognition.onresult = null; activeRecognition.onerror = null; activeRecognition.onend = null; activeRecognition.onstart = null; } catch { /* noop */ }
@@ -50,6 +56,9 @@ export function startListening(
     return false;
   }
 
+  // Si había una instancia previa colgada, la limpiamos por completo antes
+  // de crear una nueva. Un pequeño respiro evita el InvalidStateError que
+  // Chrome lanza si se llama a start() demasiado pronto tras un abort/stop.
   hardReset();
   starting = true;
 
@@ -57,7 +66,7 @@ export function startListening(
     try {
       const rec = new Ctor();
       rec.lang = 'es-ES';
-      rec.continuous = false;
+      rec.continuous = false; // una frase por activación: más fiable entre usos repetidos
       rec.interimResults = true;
 
       rec.onresult = (event: any) => {
@@ -90,6 +99,8 @@ export function startListening(
     }
   };
 
+  // Pequeño margen tras el hardReset para que el motor de voz del
+  // navegador quede realmente libre antes de arrancar una instancia nueva.
   setTimeout(create, 60);
   return true;
 }
@@ -98,18 +109,18 @@ export function stopListening(): void {
   hardReset();
 }
 
-// ─────────────────────────────────────────────────────────
-// Síntesis de voz — femenina, cálida, pausada pero no robótica
-// ─────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────
+// Síntesis de voz — timbre grave, tecnológico, tipo "Jarvis"
+// ─────────────────────────────────────────────────────────────────────────
 
 let preferredVoice: SpeechSynthesisVoice | null = null;
 let audioUnlocked = false;
 
-// Nombres de voces es-* femeninas conocidas por sonar más naturales/cálidas
+// Nombres de voces es-* conocidas por sonar naturales/masculinas y graves
 // en los principales navegadores (Chrome/Edge en Windows, macOS, Android).
-const VOZ_PREFERIDA_REGEX = /elvira|lucia|helena|monica|paulina|sabina|female|mujer|google espaÃ±ol/i;
-// Voces que suelen sonar peor (muy robóticas, "compact", masculinas marcadas)
-const VOZ_EVITAR_REGEX = /compact|novelty|whisper|jorge|diego|juan|pablo|male|hombre/i;
+const VOZ_PREFERIDA_REGEX = /jorge|diego|juan|pablo|google español|microsoft.*(pablo|jorge|dario)|male/i;
+// Voces que suelen sonar peor (robóticas, muy agudas, "compact") — evitarlas si hay alternativa.
+const VOZ_EVITAR_REGEX = /compact|novelty|whisper|female|mujer|paulina|monica|helena/i;
 
 function pickSpanishVoice(): SpeechSynthesisVoice | null {
   if (typeof window === 'undefined' || !window.speechSynthesis) return null;
@@ -137,6 +148,11 @@ if (typeof window !== 'undefined' && window.speechSynthesis) {
   refreshVoice();
 }
 
+/**
+ * Debe llamarse una vez dentro de un manejador de clic/toque real del
+ * usuario para desbloquear la síntesis de voz en navegadores que la
+ * bloquean hasta la primera interacción (Safari/iOS sobre todo).
+ */
 export function unlockSpeechSynthesis(): void {
   if (audioUnlocked || typeof window === 'undefined' || !window.speechSynthesis) return;
   try {
@@ -152,6 +168,7 @@ export function speak(text: string, enabled: boolean = true, voiceName?: string)
   if (!enabled) return;
   if (typeof window === 'undefined' || !window.speechSynthesis) return;
 
+  // Salvaguarda: cancela cualquier emisión previa antes de iniciar una nueva.
   window.speechSynthesis.cancel();
 
   let voiceToUse = preferredVoice;
@@ -166,14 +183,13 @@ export function speak(text: string, enabled: boolean = true, voiceName?: string)
 
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'es-ES';
-  // Pitch/rate ajustados para sonar mÃ¡s natural y menos "robot de hace 20 aÃ±os":
-  // rate mÃ¡s cercano a 1 (velocidad normal de conversaciÃ³n) y pitch ligeramente
-  // mÃ¡s alto suaviza el timbre en muchas voces sintÃ©ticas femeninas.
-  utterance.pitch = 1.05;
-  utterance.rate = 1.02;
+  utterance.pitch = 0.85;
+  utterance.rate = 0.95;
   utterance.volume = 1;
   if (voiceToUse) utterance.voice = voiceToUse;
 
+  // Chrome a veces "traga" la primera emisión si se llama justo después de
+  // cancel(); un pequeño margen lo evita de forma fiable.
   setTimeout(() => window.speechSynthesis.speak(utterance), 40);
 }
 

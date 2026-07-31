@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+﻿import { motion } from 'framer-motion';
 import type { BatchRecord } from '../data/plantillasBeer';
 
 interface FermenterOverlayProps {
@@ -36,7 +36,7 @@ export function FermenterOverlay({
     >
       <div className="flex flex-col items-center font-mono">
         <span className="text-2xl font-bold tracking-widest">{id}</span>
-        {isActive ? (
+        {isActive && (
           <div className="mt-1 flex flex-col items-center gap-0.5 text-xs font-light tracking-wider">
             <span>{lote.currentTemp} °C</span>
             {terminado ? (
@@ -48,10 +48,6 @@ export function FermenterOverlay({
               </>
             )}
           </div>
-        ) : (
-          <span className="mt-1 text-[11px] font-semibold uppercase tracking-[0.2em]">
-            Disponible
-          </span>
         )}
       </div>
     </motion.div>

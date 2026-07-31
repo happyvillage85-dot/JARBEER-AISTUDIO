@@ -1,4 +1,4 @@
-﻿import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 import { BottomNav } from './components/BottomNav';
@@ -105,17 +105,17 @@ function AppContent() {
     const lower = userText.trim().toLowerCase();
 
     const lastMsg = msgs[msgs.length - 1];
-    const isCleanHistoryPrompt = lastMsg && lastMsg.role === 'assistant' && lastMsg.content.includes('Â¿Limpiamos el historial de este chat para prevenir alucinaciones?');
+    const isCleanHistoryPrompt = lastMsg && lastMsg.role === 'assistant' && lastMsg.content.includes('¿Limpiamos el historial de este chat para prevenir alucinaciones?');
 
-    if (lower.includes('modo diagnÃ³stico') || lower.includes('diagnostico')) {
+    if (lower.includes('modo diagnóstico') || lower.includes('diagnostico')) {
       playSound('confirm', sound);
       setShowDiagnostic(prev => {
         const next = !prev;
-        speak(next ? 'Modo diagnÃ³stico activado. Mostrando telemetrÃ­a.' : 'Modo diagnÃ³stico desactivado.', voiceOn, selectedVoice);
+        speak(next ? 'Modo diagnóstico activado. Mostrando telemetría.' : 'Modo diagnóstico desactivado.', voiceOn, selectedVoice);
         setMsgs(p => [
           ...p,
           { id: `u${Date.now()}`, role: 'user', content: userText, timestamp: now() },
-          { id: `a${Date.now()}`, role: 'assistant', content: next ? 'Modo diagnÃ³stico activado. Mostrando telemetrÃ­a en pantalla.' : 'Modo diagnÃ³stico desactivado.', timestamp: now() }
+          { id: `a${Date.now()}`, role: 'assistant', content: next ? 'Modo diagnóstico activado. Mostrando telemetría en pantalla.' : 'Modo diagnóstico desactivado.', timestamp: now() }
         ]);
         return next;
       });
@@ -125,7 +125,7 @@ function AppContent() {
     }
 
     if (isCleanHistoryPrompt) {
-      if (lower === 'y' || lower === 'yes' || lower === 'si' || lower === 'sÃ­' || lower === 'limpiar' || lower === 'clear' || lower === 's') {
+      if (lower === 'y' || lower === 'yes' || lower === 'si' || lower === 'sí' || lower === 'limpiar' || lower === 'clear' || lower === 's') {
         playSound('confirm', sound);
         setMsgs(initialChat);
         setTyping(false);
@@ -137,11 +137,11 @@ function AppContent() {
         setMsgs(p => [
           ...p,
           { id: `u${Date.now()}`, role: 'user', content: userText, timestamp: now() },
-          { id: `a${Date.now()}`, role: 'assistant', content: 'Entendido, socio. Mantendremos la sesiÃ³n de chat activa por si necesitas repasar algÃºn cÃ¡lculo o receta anterior. TÃº decides.', timestamp: now() }
+          { id: `a${Date.now()}`, role: 'assistant', content: 'Entendido, socio. Mantendremos la sesión de chat activa por si necesitas repasar algún cálculo o receta anterior. Tú decides.', timestamp: now() }
         ]);
         setTyping(false);
         setMic('idle');
-        speak('Entendido, socio. Mantendremos la sesiÃ³n activa.', voiceOn, selectedVoice);
+        speak('Entendido, socio. Mantendremos la sesión activa.', voiceOn, selectedVoice);
         return;
       }
     }
@@ -197,7 +197,7 @@ function AppContent() {
       }
       console.error("Error al invocar el asistente de Gemini:", err);
       const errorMsg = err.message || "Error desconocido en el servidor.";
-      reply = `âš ï¸ *Error de conexiÃ³n con el nÃºcleo de Gemini:*\n"${errorMsg}"\n\nSocio, parece que hay un problema al contactar con mi servidor. Si estÃ¡s en modo Online, asegÃºrate de aÃ±adir la clave de API (**GEMINI_API_KEY**) en los Ajustes. Si prefieres trabajar de forma local y offline, puedes cambiar al modo **BÃºnker** haciendo clic en el selector de la barra superior.`;
+      reply = `� � *Error de conexión con el núcleo de Gemini:*\n"${errorMsg}"\n\nSocio, parece que hay un problema al contactar con mi servidor. Si estás en modo Online, asegúrate de añadir la clave de API (**GEMINI_API_KEY**) en los Ajustes. Si prefieres trabajar de forma local y offline, puedes cambiar al modo **Búnker** haciendo clic en el selector de la barra superior.`;
     }
 
     if (!usedGemini) {
@@ -278,7 +278,7 @@ function AppContent() {
 
   return (
     <>
-      {/* Background image â€” full visibility */}
+      {/* Background image — full visibility */}
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <img
           src="/fondo_pc.png"
@@ -287,7 +287,7 @@ function AppContent() {
           style={{ opacity: 1 }}
           referrerPolicy="no-referrer"
         />
-        <div className="absolute inset-0 bg-black/60" />
+        
       </div>
       <AnimatePresence>
         {!booted && <BootScreen key="boot" onComplete={()=>setBooted(true)} soundEnabled={sound}/>}
@@ -306,7 +306,7 @@ function AppContent() {
       )}
       {booted && user && (
         <>
-          {/* â”€â”€ Desktop layout: TopNav + content + StatusBar â”€â”€ */}
+          {/* ── Desktop layout: TopNav + content + StatusBar ── */}
           <div className="hidden md:flex flex-col h-[100dvh]">
             <TopNav active={screen} onNavigate={navigate} mode={mode} onToggleMode={toggleMode}
               soundEnabled={sound} onToggleSound={()=>setSound(v=>!v)}
@@ -319,7 +319,7 @@ function AppContent() {
                   {screen==='home'          && <Home micState={mic} onMic={handleMic} onNavigate={navigate} soundEnabled={sound} onToggleSound={()=>setSound(v=>!v)} mode={mode} onToggleMode={toggleMode}/>}
                   {screen==='production'    && <Production/>}
                   {screen==='documents'     && <Documents/>}
-                  {screen==='fermentadores'  && <Fermentadores/>}
+                  {screen==='fermentadores'  && <Fermentadores onNavigate={navigate}/>}
                   {screen==='recetas'        && <Recetas onNavigate={navigate} onSend={handleSend} />}
                   {screen==='alertas'        && <Alertas/>}
                   {screen==='analisis'       && <Analisis/>}
@@ -331,7 +331,7 @@ function AppContent() {
             <StatusBar/>
           </div>
 
-          {/* â”€â”€ Mobile layout: BottomNav â”€â”€ */}
+          {/* ── Mobile layout: BottomNav ── */}
           <div className="md:hidden relative mx-auto flex h-[100dvh] max-w-2xl flex-col">
             <div className="relative z-10 flex-1 overflow-y-auto">
               <AnimatePresence mode="wait">
@@ -339,7 +339,7 @@ function AppContent() {
                   {screen==='home'          && <Home micState={mic} onMic={handleMic} onNavigate={navigate} soundEnabled={sound} onToggleSound={()=>setSound(v=>!v)} mode={mode} onToggleMode={toggleMode}/>}
                   {screen==='production'    && <Production/>}
                   {screen==='documents'     && <Documents/>}
-                  {screen==='fermentadores'  && <Fermentadores/>}
+                  {screen==='fermentadores'  && <Fermentadores onNavigate={navigate}/>}
                   {screen==='recetas'        && <Recetas onNavigate={navigate} onSend={handleSend} />}
                   {screen==='alertas'        && <Alertas/>}
                   {screen==='analisis'       && <Analisis/>}
