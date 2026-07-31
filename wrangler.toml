@@ -1,7 +1,9 @@
 # wrangler.toml
-name = "jarbeer-gemini-worker"
+name = "labirradegabi"
 main = "worker/gemini-worker.ts"
 compatibility_date = "2026-07-01"
+workers_dev = true
+
 
 # La API Key NO va aquí en texto plano por seguridad.
 # Configúrala como "secret" con este comando (te la pedirá interactivamente,
