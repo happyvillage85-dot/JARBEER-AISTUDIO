@@ -4,6 +4,7 @@ import { ScreenHeader } from '../components/ScreenHeader';
 import { GlassCard } from '../components/GlassCard';
 import { useRegistros } from '../lib/registrosState';
 import { generateProductionPdfHtml, generateFermentationHistoryHtml } from '../lib/pdf';
+import { BATCHES } from '../data/mockData';
 
 export function Documents() {
   const { registrosProduccion, registrosFermentacion } = useRegistros();
@@ -16,49 +17,79 @@ export function Documents() {
     win.document.close();
   };
 
-  const buildProductionFields = (batch: typeof registrosProduccion[0]) => ({
-    batch: batch.batch,
-    recipe: batch.recipe,
-    brewer: batch.brewer,
-    startDate: batch.batch,
-    volume: batch.volume,
-    alcohol: batch.abv,
-    color: '—',
-    ibuObjetivo: '—',
-    h2oInicial: '—',
-    tempInicial: '—',
-    acidoFosforico: '—',
-    mixTempReal: '—',
-    phMaceracion: '—',
-    fosfMaceracion: '—',
-    escalones: [],
-    enjuagueDir: '—',
-    spargeTotal: '—',
-    platoPreHervido: '—',
-    phMacerado: '—',
-    transferencia: '—',
-    tempHervidoReal: '—',
-    fosfMediaHora: '—',
-    whirlpoolRemolino: '—',
-    whirlpoolReposo: '—',
-    levadura: '—',
-    platoFinal: batch.plato,
-    litrosTransfReal: String(batch.volume),
-    fermentadorNum: batch.fermentadorNum,
-    phFinal: batch.ph,
-    regFermentacion: '—',
-    fechaEnvasado: '—',
-    totalBotellas: '—',
-    numPalets: '—',
-    lotesPalets: '—',
-    barriles20: '—',
-    barriles30: '—',
-    barriles50: '—',
-    observations: batch.observations,
-  });
+  // Busca la plantilla técnica (maltas, lúpulos, escalones de maceración...)
+  // que corresponde a la receta del lote. Los números de lote de mockData.ts
+  // (26001, 23018, 24006) son lotes de referencia históricos, distintos de
+  // los lotes reales en curso — por eso se cruza por nombre de receta, no
+  // por número de lote. TODO: cuando estos datos técnicos se migren a
+  // RegistrosState, este cruce por receta dejará de hacer falta.
+  const findRecipeTemplate = (recipe: string) =>
+    BATCHES.find((b) => b.recipe.toLowerCase() === recipe.toLowerCase());
+
+  const buildProductionFields = (batch: typeof registrosProduccion[0]) => {
+    const template = findRecipeTemplate(batch.recipe);
+
+    return {
+      // ── Datos reales y actuales del lote (siempre desde RegistrosState) ──
+      batch: batch.batch,
+      recipe: batch.recipe,
+      brewer: batch.brewer,
+      startDate: template?.startDate ?? batch.batch,
+      volume: batch.volume,
+      alcohol: batch.abv,
+      color: template?.color ?? '—',
+      ibuObjetivo: template?.ibuObjetivo ?? '—',
+      platoFinal: batch.plato,
+      litrosTransfReal: String(batch.volume),
+      fermentadorNum: batch.fermentadorNum,
+      phFinal: batch.ph,
+      observations: batch.observations,
+
+      // ── Receta técnica: viene de la plantilla de mockData.ts si existe
+      // una para esta receta; si no hay plantilla, se queda en '—' ──
+      h2oInicial: template?.h2oInicial ?? '—',
+      tempInicial: template?.tempInicial ?? '—',
+      acidoFosforico: template?.acidoFosforico ?? '—',
+      mixTempReal: template?.mixTempReal ?? '—',
+      phMaceracion: template?.phMaceracion ?? '—',
+      fosfMaceracion: template?.fosfMaceracion ?? '—',
+      escalones: template?.escalones ?? [],
+      enjuagueDir: template?.enjuagueDir ?? '—',
+      spargeTotal: template?.spargeTotal ?? '—',
+      platoPreHervido: template?.platoPreHervido ?? '—',
+      phMacerado: template?.phMacerado ?? '—',
+      transferencia: template?.transferencia ?? '—',
+      tempHervidoReal: template?.tempHervidoReal ?? '—',
+      fosfMediaHora: template?.fosfMediaHora ?? '—',
+      whirlpoolRemolino: template?.whirlpoolRemolino ?? '—',
+      whirlpoolReposo: template?.whirlpoolReposo ?? '—',
+      levadura: template?.levadura?.name ?? '—',
+      regFermentacion: template?.regFermentacion ?? '—',
+
+      // ── Envasado: no hay dato real todavía, se queda en blanco a propósito ──
+      fechaEnvasado: '—',
+      totalBotellas: '—',
+      numPalets: '—',
+      lotesPalets: '—',
+      barriles20: '—',
+      barriles30: '—',
+      barriles50: '—',
+    };
+  };
+
+  const buildPdfInputs = (batch: typeof registrosProduccion[0]) => {
+    const template = findRecipeTemplate(batch.recipe);
+    const maltas = template?.maltas ?? [];
+    const lupulosFicha = template?.lupulosPlantilla ?? [];
+    return { maltas, lupulosFicha };
+  };
 
   const handleOpenProductionDoc = (item: typeof registrosProduccion[0]) => {
-    openHtmlDocument(generateProductionPdfHtml(buildProductionFields(item), [], []), `Ficha de Producción ${item.batch}`);
+    const { maltas, lupulosFicha } = buildPdfInputs(item);
+    openHtmlDocument(
+      generateProductionPdfHtml(buildProductionFields(item), maltas, lupulosFicha),
+      `Ficha de Producción ${item.batch}`
+    );
   };
 
   const handleOpenFermentationDoc = (item: typeof registrosProduccion[0]) => {
