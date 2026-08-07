@@ -1,8 +1,8 @@
 ﻿export const APP_NAME = 'J.A.R.B.E.E.R.';
-export const APP_FULL_NAME = 'Just A Real Brewing Expert Reasoner';
+export const APP_FULL_NAME = 'Just A Real Brewing Engineering Expert Reasoner';
 export const APP_TAGLINE = 'Inteligencia que fermenta resultados';
-export const APP_VERSION = 'BETA 2.7';
-export const USER_NAME = 'Juanfran';
+export const APP_VERSION = 'BETA 3.3 - by JF';
+export const USER_NAME = 'Ciccio';
 
 // Modo producciÃ³n: rutas relativas a Netlify (/.netlify/functions/*).
 // Modo desarrollo: backend local (VITE_API_URL o localhost:8000).
