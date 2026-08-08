@@ -197,7 +197,7 @@ function AppContent() {
       }
       console.error("Error al invocar el asistente de Gemini:", err);
       const errorMsg = err.message || "Error desconocido en el servidor.";
-      reply = `� � *Error de conexión con el núcleo de Gemini:*\n"${errorMsg}"\n\nSocio, parece que hay un problema al contactar con mi servidor. Si estás en modo Online, asegúrate de añadir la clave de API (**GEMINI_API_KEY**) en los Ajustes. Si prefieres trabajar de forma local y offline, puedes cambiar al modo **Búnker** haciendo clic en el selector de la barra superior.`;
+      reply = `� � *Error de conexión con el núcleo de Gemini:*\n"${errorMsg}"\n\nSocio, parece que hay un problema al contactar con mi servidor. Si estás en modo Online, asegúrate de añadir la clave de API (**GEMINI_API_KEY**) en los Ajustes. Si prefieres trabajar de forma local y offline, puedes cambiar al modo **Búnker** haciendo clic en el selector de la barra superior.`;
     }
 
     if (!usedGemini) {
@@ -221,8 +221,14 @@ function AppContent() {
     setTyping(false);
     setMic('idle');
     api.resetAvatar().catch(()=>{});
-    if (match?.action==='navigate' && match.target) setTimeout(()=>setScreen(match.target!), 600);
-  }, [sound, voiceOn, selectedVoice, msgs, mode, buildFactoryContext]);
+    if (match?.action==='navigate' && match.target) setTimeout(() => {
+      if (mic === 'listening') {
+        stopListening();
+        setMic('idle');
+      }
+      setScreen(match.target!);
+    }, 600);
+  }, [sound, voiceOn, selectedVoice, msgs, mode, buildFactoryContext, mic]);
 
   const handleMic = useCallback(() => {
     if (mic === 'listening') {

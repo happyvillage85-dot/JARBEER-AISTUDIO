@@ -4,8 +4,14 @@ import { BookOpen, Award, CheckCircle2 } from 'lucide-react';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { GlassCard } from '../components/GlassCard';
 import { useRegistros } from '../lib/registrosState';
+import type { Screen } from '../data/mockData';
 
-export function Recetas() {
+interface RecetasProps {
+  onNavigate?: (s: Screen) => void;
+  onSend?: (t: string) => void;
+}
+
+export function Recetas({ onNavigate, onSend }: RecetasProps) {
   const { registrosProduccion } = useRegistros();
 
   const recipesMap = new Map();
